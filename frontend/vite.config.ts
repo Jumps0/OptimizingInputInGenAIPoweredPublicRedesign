@@ -54,7 +54,17 @@
       outDir: 'build',
     },
     server: {
-      port: 3000,
-      open: true,
+      port: 5000,
+      proxy: {
+        '/api': {
+        target: 'http://130.225.39.167:5000/',
+        changeOrigin: true,
+        configure: (proxy, options) => {
+          // proxy will be an instance of 'http-proxy'
+        },
+      },
+    },
+      //port: 3000,
+      //open: true,
     },
   });
