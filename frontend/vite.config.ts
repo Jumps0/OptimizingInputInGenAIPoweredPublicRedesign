@@ -1,10 +1,11 @@
 
   import { defineConfig } from 'vite';
+  import basicSsl from "@vitejs/plugin-basic-ssl"
   import react from '@vitejs/plugin-react-swc';
   import path from 'path';
 
   export default defineConfig({
-    plugins: [react()],
+    plugins: [react(), basicSsl()],
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       alias: {
@@ -55,9 +56,10 @@
     },
     server: {
       port: 5000,
+      https: true,
       proxy: {
         '/api': {
-        target: 'http://130.225.39.167:5000/',
+        target: 'https://130.225.39.167:5000/',
         changeOrigin: true,
         configure: (proxy, options) => {
           // proxy will be an instance of 'http-proxy'
