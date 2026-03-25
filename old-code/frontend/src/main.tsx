@@ -1,7 +1,13 @@
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { initializeStorage } from "./utils/storage";
+import "./index.css";
+import App from "./App";
 
-  import { createRoot } from "react-dom/client";
-  import App from "./App.tsx";
-  import "./index.css";
+initializeStorage();
 
-  createRoot(document.getElementById("root")!).render(<App />);
-  
+createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+        <App />
+    </StrictMode>
+);

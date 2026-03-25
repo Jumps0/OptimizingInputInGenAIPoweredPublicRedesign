@@ -1,16 +1,15 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import HomePage from "./pages/HomePage";
 import EditorPage from "./pages/EditorPage";
-import ProfilePage from "./pages/ProfilePage";
 import GalleryPage from "./pages/GalleryPage";
 import AdminPage from "./pages/AdminPage";
+// import PostStudyFormPage from "./pages/PostStudyFormPage";
 import Login from "./components/Auth/Login";
-import CreateAccount from "./components/Auth/CreateAccount";
 import { AuthProvider, useAuth } from "./context";
 import ScrollToTop from "./components/ScrollToTop";
 import Layout from "./components/Layout";
 import "./App.css";
 import type { JSX } from "react";
+import PostStudyFormPage from "./pages/PostStudyFormPage";
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { user, isLoading } = useAuth();
@@ -42,7 +41,29 @@ const PublicRoute = ({ children }: { children: JSX.Element }) => {
   }
 
   if (user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/editor" replace />;
+  }
+
+  return children;
+};
+
+const AdminRoute = ({ children }: { children: JSX.Element }) => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.role !== "admin") {
+    return <Navigate to="/editor" replace />;
   }
 
   return children;
@@ -66,15 +87,6 @@ function App() {
             }
           />
 
-          <Route
-            path="/create-account"
-            element={
-              <PublicRoute>
-                <CreateAccount />
-              </PublicRoute>
-            }
-          />
-
           {/* Layout Wrapper */}
           <Route element={<Layout />}>
 
@@ -82,7 +94,7 @@ function App() {
               path="/"
               element={
                 <ProtectedRoute>
-                  <HomePage />
+                  <Navigate to="/editor" replace />
                 </ProtectedRoute>
               }
             />
@@ -97,15 +109,6 @@ function App() {
             />
 
             <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
               path="/gallery"
               element={
                 <ProtectedRoute>
@@ -115,15 +118,26 @@ function App() {
             />
 
             <Route
-              path="/admin"
+              path="/post-study-form"
               element={
                 <ProtectedRoute>
-                  <AdminPage />
+                  <PostStudyFormPage />
                 </ProtectedRoute>
               }
             />
 
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminPage />
+                </AdminRoute>
+              }
+            />
+
           </Route>
+
+          <Route path="*" element={<Navigate to="/editor" replace />} />
 
         </Routes>
       </Router>
