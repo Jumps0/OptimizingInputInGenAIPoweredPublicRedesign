@@ -19,7 +19,7 @@ const Footer = () => {
         {/* Email */}
         <div className="flex items-center gap-2 text-emerald-500">
           {/* <Mail size={18} className="text-emerald-500" /> */}
-          <span>support@citizenredesign.com</span>
+          <span>edu.mashalah@gmail.com</span>
         </div>
 
         {/* Copyright */}
