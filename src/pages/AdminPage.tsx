@@ -4,6 +4,7 @@ import {
   fetchUsers,
   fetchEditHistory,
   fetchResultFeedbacks,
+  removeUser,
   type User,
   type EditHistory,
   type ResultFeedback,
@@ -365,18 +366,18 @@ const AdminPage = () => {
                                     <img src={user.avatar} alt="" className="w-10 h-10 rounded-full bg-gray-100 object-cover ring-2 ring-white shadow-sm" />
                                   ) : (
                                     <div className="w-10 h-10 rounded-full bg-e-100 text-e-700 flex items-center justify-center text-sm font-bold ring-2 ring-white shadow-sm">
-                                      {user.username.slice(0, 2).toUpperCase()}
+                                      {user.username.slice(0, 2).toUpperCase()} {/*Shortened User PFP*/}
                                     </div>
                                   )}
                                   <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
                                 </div>
                                 <div>
-                                  <div className="font-semibold text-gray-900">{user.username}</div>
-                                  <div className="text-xs text-gray-500 font-mono">ID: #{user.id}</div>
+                                  <div className="font-semibold text-gray-900">{user.username}</div> {/*Username*/}
+                                  <div className="text-xs text-gray-500 font-mono">ID: #{user.id}</div> {/*User ID*/}
                                 </div>
                               </div>
                             </td>
-                            <td className="p-4">
+                            <td className="p-4"> {/*USER ROLE*/}
                               <span className={cn(
                                 "px-2.5 py-1 rounded-full text-xs font-medium border",
                                 user.role === 'admin' 
@@ -387,7 +388,7 @@ const AdminPage = () => {
                               </span>
                             </td>
                             <td className="p-4">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2"> {/*METHOD*/}
                                 <span className={cn(
                                   "w-2 h-2 rounded-full",
                                   user.assignedMethod === 'text' ? "bg-blue-500" :
@@ -399,15 +400,22 @@ const AdminPage = () => {
                                 </span>
                               </div>
                             </td>
-                            <td className="p-4">
+                            <td className="p-4"> {/*Active/In-active (Does nothing)*/}
                               <span className="inline-flex items-center px-2 py-1 rounded-md bg-green-50 text-green-700 text-xs font-medium">
                                 Active
                               </span>
                             </td>
                             <td className="p-4 text-right">
-                              <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
-                                <MoreHorizontal size={16} />
-                              </button>
+                              <div className="relative group">
+                                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
+                                  <MoreHorizontal size={16} />
+                                </button>
+                                <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
+                                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg" onClick={() => {removeUser(user);window.location.reload()}}> {/*Remove User & Reload this window*/}
+                                    Remove User
+                                  </button>
+                                </div>
+                              </div>
                             </td>
                           </tr>
                         ))

@@ -117,10 +117,19 @@ export const addHistoryItem = (item: EditHistory) => {
   localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
 };
 
-export const addUser = (user: User) => {
+export const addUser = (user: User) => { // Add new user to storage
   const users = getStoredUsers();
   users.push(user);
   localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+};
+
+export const removeUser = (user: User) => { // Remove user and associated data
+  const users = getStoredUsers();
+  const index = users.findIndex((u) => u.id === user.id);
+  if (index !== -1) {
+    users.splice(index, 1);
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+  }
 };
 
 export const savePostStudyResponse = (
