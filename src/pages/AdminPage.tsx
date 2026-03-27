@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { loadPyodide, type PyodideInterface } from 'pyodide';
 import { useAuth } from '@/context';
 import {
   fetchUsers,
@@ -356,6 +357,79 @@ const AdminPage = () => {
                   </div>
                 );
               })()}
+            </div>
+
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              {(() => {
+                const [isPyodideReady, setIsPyodideReady] = useState<boolean>(false);
+                const [loading, setLoading] = useState<boolean>(false);
+                const pyodideRef = useRef<PyodideInterface | null>(null);
+
+                useEffect(() => {
+                  const initializePyodide = async () => {
+                    try {
+                      const pyodide = await loadPyodide({
+                        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/" /* https://pyodide.org/en/stable/usage/quickstart.html */
+                      });
+                      
+                      await pyodide.runPython(`
+                        def modify_string(text):
+                            """Append 'apple' to the input string"""
+                            return text + "apple"
+                      `);
+                      
+                      pyodideRef.current = pyodide;
+                      setIsPyodideReady(true);
+                    } catch (error) {
+                      console.error('Failed to initialize Pyodide:', error);
+                    }
+                  };
+
+                  initializePyodide();
+                }, []);
+
+                const callPythonFunction = async (inputString: string): Promise<string | null> => {
+                  if (!pyodideRef.current) {
+                    console.error('Pyodide not ready');
+                    return null;
+                  }
+
+                  try {
+                    setLoading(true);
+                    console.log('Original string:', inputString);
+                    
+                    const result = pyodideRef.current.runPython(`
+              modify_string("${inputString.replace(/"/g, '\\"')}")
+                    `);
+                    
+                    console.log('Modified string from Python:', result);
+                    return result as string;
+                  } catch (error) {
+                    console.error('Error calling Python function:', error);
+                    return null;
+                  } finally {
+                    setLoading(false);
+                  }
+                };
+
+                const handleProcessString = async (): Promise<void> => {
+                  const testString = "Hello, world ";
+                  const result = await callPythonFunction(testString);
+                  console.log('Final result:', result);
+                };
+
+                return (
+                  <div>
+                    <button 
+                      onClick={handleProcessString}
+                      disabled={!isPyodideReady || loading}
+                    >
+                      (pytest)
+                    </button>
+                  </div>
+                );
+              }
+              )()}
             </div>
 
             <div className="flex items-center gap-3 w-full md:w-auto"> {/*Search bar*/}
