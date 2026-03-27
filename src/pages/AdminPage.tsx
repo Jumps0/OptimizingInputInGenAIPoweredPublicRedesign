@@ -358,6 +358,57 @@ const AdminPage = () => {
               })()}
             </div>
 
+            <div> {(() => {
+                const [loading, setLoading] = useState(false);
+                const callPythonFunction = async (inputString : string) => {
+                  setLoading(true);
+                  try {
+                    // Call the Python serverless function
+                    console.log("2");
+                    const response = await fetch('/src/serverlesstest.py', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ input: inputString }),
+                    });
+                    console.log("3");
+                    const data = await response.json();
+                    
+                    // Print the modified string to console
+                    console.log('Modified string:', data.result);
+                    
+                    // Return the result if needed elsewhere
+                    return data.result;
+                    
+                  } catch (error) {
+                    console.error('Error calling Python function:', error);
+                  } finally {
+                    setLoading(false);
+                  }
+                };
+
+                // Example usage with a button
+                const handleClick = () => {
+                  callPythonFunction("Hello ");
+                };
+
+                return (
+                  <div>
+                    <button 
+                      type="button"
+                      className="flex w-full items-center justify-center gap-3 rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-700 py-6 text-lg font-semibold text-white shadow-xl shadow-emerald-900/20 transition hover:brightness-105 active:scale-[0.99] sm:py-7 sm:text-xl"
+                      onClick={handleClick} disabled={loading}>
+                        {loading ? 'Processing...' : 'Append Apple'}
+                      <span>TESTBUTTON</span>
+                    </button>
+
+                  </div>
+                );
+            })()}
+
+            </div>
+
             <div className="flex items-center gap-3 w-full md:w-auto"> {/*Search bar*/}
               {activeTab === 'prompts' && (
                 <div className="flex bg-gray-200/50 p-1 rounded-lg mr-2">
