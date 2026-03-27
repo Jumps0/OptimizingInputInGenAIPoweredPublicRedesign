@@ -1,3 +1,4 @@
+import { pickSpecificAssignedMethod } from './constants';
 import type { User, Project, EditHistory, PostStudyResponse } from './dummyData';
 
 /** User-submitted feedback when declining “OK” on a generation result (stored locally). */
@@ -130,6 +131,30 @@ export const removeUser = (user: User) => { // Remove user and associated data
     users.splice(index, 1);
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
   }
+};
+
+export const renameUser = (user: User, newName: string) => { // Rename specified user
+  const users = getStoredUsers();
+  const index = users.findIndex((u) => u.id === user.id);
+  if (index !== -1) {
+    users[index].username = newName;
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+  }
+};
+
+export const createNewUser = (username: string, method: string, isAdminUser: boolean) => {
+  if(username.length === 0) {username = `citizen${Date.now()}`;} // Fallback name if empty
+
+  const newUser: User = {
+        id: Date.now(),
+        username: username.trim().toLowerCase(),
+        assignedMethod: pickSpecificAssignedMethod(Number(method)),
+        role: isAdminUser ? 'admin' : 'user',
+  };
+
+  console.log(method, Number(method), newUser.assignedMethod);
+
+  addUser(newUser);
 };
 
 export const savePostStudyResponse = (

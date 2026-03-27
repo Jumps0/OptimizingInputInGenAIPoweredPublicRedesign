@@ -10,3 +10,7 @@ export type AssignedMethod = (typeof METHODS)[number];
 export function pickRandomAssignedMethod(): AssignedMethod {
   return METHODS[Math.floor(Math.random() * METHODS.length)];
 }
+
+export function pickSpecificAssignedMethod(method: number): AssignedMethod {
+  return METHODS[method]; // 0 - Text, 1 - Voice, 2 - Inpainting, 3 - Drag-and-Drop
+}

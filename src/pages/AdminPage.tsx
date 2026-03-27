@@ -5,9 +5,11 @@ import {
   fetchEditHistory,
   fetchResultFeedbacks,
   removeUser,
+  renameUser,
+  createNewUser,
   type User,
   type EditHistory,
-  type ResultFeedback,
+  type ResultFeedback
 } from '@/utils';
 import { 
   Shield, 
@@ -242,9 +244,10 @@ const AdminPage = () => {
 
         {/* Main Content Area */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-[600px] flex flex-col">
-          {/* Toolbar */}
-          <div className="p-4 border-b border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4 bg-gray-50/50">
-            <div className="flex bg-gray-200/50 p-1 rounded-lg">
+
+          <div className="p-4 border-b border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4 bg-gray-50/50"> {/*Toolbar with Tabs & Search*/}
+
+            <div className="flex bg-gray-200/50 p-1 rounded-lg"> {/*Tabs for Users, Prompts History, and Result Feedback*/}
               <button
                 onClick={() => setActiveTab('users')}
                 className={cn(
@@ -282,8 +285,80 @@ const AdminPage = () => {
                 Result feedback
               </button>
             </div>
+            
+            <div className="flex items-center gap-3 w-full md:w-auto"> {/*Add User button*/}
+              {(() => {
+                const [showAddMenu, setShowAddMenu] = useState(false);
+                const [newUsername, setNewUsername] = useState('');
+                const [selectedMethod, setSelectedMethod] = useState("0");
 
-            <div className="flex items-center gap-3 w-full md:w-auto">
+                return (
+                  <div className="relative">
+                    <button 
+                      onClick={() => setShowAddMenu(!showAddMenu)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-sm hover:shadow text-sm font-medium"
+                    >
+                      Add User
+                    </button>
+
+                    {showAddMenu && (
+                      <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30 p-4 space-y-4">
+                        <input
+                          type="text"
+                          placeholder="New username"
+                          value={newUsername}
+                          onChange={(e) => setNewUsername(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 focus:outline-none"
+                        />
+
+                        <select
+                          value={selectedMethod}
+                          onChange={(e) => setSelectedMethod(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
+                        >
+                          <option value="0">Text</option>
+                          <option value="1">Voice</option>
+                          <option value="2">Inpainting</option>
+                          <option value="3">Drag-and-Drop</option>
+                        </select>
+
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setShowAddMenu(false);
+                              setNewUsername('');
+                              setSelectedMethod("0");
+                            }}
+                            className="flex-1 px-3 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => {
+                              console.log(newUsername, selectedMethod);
+                              createNewUser(newUsername, selectedMethod, false);
+                              console.log(11);
+                              setShowAddMenu(false);
+                              console.log(12);
+                              setNewUsername('');
+                              console.log(13);
+                              setSelectedMethod(selectedMethod);
+                              console.log(14);
+                              window.location.reload();
+                            }}
+                            className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                          >
+                            Confirm
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="flex items-center gap-3 w-full md:w-auto"> {/*Search bar*/}
               {activeTab === 'prompts' && (
                 <div className="flex bg-gray-200/50 p-1 rounded-lg mr-2">
                   <button
@@ -409,12 +484,24 @@ const AdminPage = () => {
                               <div className="relative group">
                                 <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
                                   <MoreHorizontal size={16} />
-                                </button>
-                                <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
-                                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg" onClick={() => {removeUser(user);window.location.reload()}}> {/*Remove User & Reload this window*/}
+                                  <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
+                                    <button 
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                                    onClick={() => {
+                                      const newName = prompt('Input new name for user');
+                                      if (newName) {
+                                      renameUser(user, newName);
+                                      window.location.reload();
+                                      }
+                                    }}
+                                    >
+                                    Rename User
+                                    </button>
+                                  <button className="w-full text-left px-4 py-2 bg-red-600 text-sm text-gray-700 hover:bg-gray-50 rounded-lg hover:bg-red-700" onClick={() => {removeUser(user);window.location.reload()}}> {/*Remove User & Reload this window*/}
                                     Remove User
                                   </button>
                                 </div>
+                                </button>
                               </div>
                             </td>
                           </tr>
