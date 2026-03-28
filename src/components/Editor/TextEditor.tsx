@@ -19,7 +19,6 @@ const TextEditor = ({ prompt, onPromptChange }: TextEditorProps) => {
         />
         <div className="mt-2 text-xs text-gray-500 flex justify-between">
           <span>Be specific about the elements you want to change.</span>
-          <span>{prompt.length} chars</span>
         </div>
       </div>
       
