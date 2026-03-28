@@ -21,6 +21,9 @@ STEPS = 50  # Number of inference steps (higher = more quality but slower)
 GUIDANCE = 30  # Guidance scale (how closely to follow the prompt)
 OUTPUT_FORMAT = "jpeg"  # Output format: "jpeg" or "png"
 
+def testprint(input_string):
+    return input_string + "apple"
+
 def resize_image_if_needed(image_path, suffix="_resized"):
     # Resize image if it exceeds max dimensions while preserving aspect ratio
     try:

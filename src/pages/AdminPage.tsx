@@ -31,6 +31,8 @@ import {
   MessageSquareQuote
 } from 'lucide-react';
 
+import runflux from '../runflux.py?raw';
+
 // Helper for conditional classes
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(' ');
 
@@ -372,12 +374,33 @@ const AdminPage = () => {
                         indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/" /* https://pyodide.org/en/stable/usage/quickstart.html */
                       });
                       
-                      await pyodide.runPython(`
-                        def modify_string(text):
-                            """Append 'apple' to the input string"""
-                            return text + "apple"
+                      await pyodide.loadPackage("micropip") // Install micropip first so we can actually use it
+                      pyodide.FS.writeFile('/home/pyodide/runflux.py', runflux);
+        
+                      // Install required packages using micropip
+                      // Note: This must be done BEFORE importing them in the script
+                      await pyodide.runPythonAsync(`
+                        import micropip
+
+                        # Install packages - this downloads and installs them from PyPI
+                        # Pillow (PIL) and requests are available as pure Python wheels
+                        await micropip.install('pillow')
+                        await micropip.install('requests')
+
+                        print("✓ Packages installed successfully")
                       `);
                       
+                      // Now write and import runflux.py
+                      pyodide.FS.writeFile('runflux.py', runflux);
+                      
+                      await pyodide.runPythonAsync(`
+                        import runflux
+
+                        # Store reference to the function
+                        testprint = runflux.testprint
+                        print("✓ Script loaded")
+                      `);
+
                       pyodideRef.current = pyodide;
                       setIsPyodideReady(true);
                     } catch (error) {
@@ -396,14 +419,16 @@ const AdminPage = () => {
 
                   try {
                     setLoading(true);
-                    console.log('Original string:', inputString);
-                    
+                    const escapedInput = inputString.replace(/"/g, '\\"');
+      
                     const result = pyodideRef.current.runPython(`
-              modify_string("${inputString.replace(/"/g, '\\"')}")
+                      import runflux
+                      result = runflux.testprint("${escapedInput}")
+                      result
                     `);
                     
-                    console.log('Modified string from Python:', result);
-                    return result as string;
+                    console.log(`Input: "${inputString}" → Output: "${result}"`);
+                    return result;
                   } catch (error) {
                     console.error('Error calling Python function:', error);
                     return null;
