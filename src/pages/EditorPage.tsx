@@ -7,7 +7,7 @@ import { saveNewGeneration, addResultFeedback } from "@/utils";
 import { TextTool, VoiceTool, InpaintingTool, DragDropTool } from "@/components/Editor/Tools";
 import type { LineType } from "@/components/Editor/InpaintingEditor";
 import type { DroppedElement } from "@/components/Editor/DragDropEditor";
-import {  Sparkles, RotateCcw, Check, MessageSquareText, X } from "lucide-react";
+import {  Sparkles, RotateCcw, /*Check, MessageSquareText, X*/ } from "lucide-react";
 import ComparisonSlider from "@/components/ComparisonSlider";
 import { applySepiaFilter, applyInpaintingFilter, applyDragDropFilter } from "@/utils/imageUtils";
 import { METHODS } from "@/utils/constants";
@@ -395,12 +395,24 @@ async function sleep(ms: number): Promise<void> {
     }
   };
 
-  const handleAcceptOk = () => {
+  
+  const handleExitGallery = () => {
     setFeedbackOpen(false);
     setFeedbackText("");
     navigate("/gallery");
   };
 
+  const handleRestart = () => {
+    setSessionRound(1);
+    setStep("editor");
+    setResultImage(null);
+    setLastHistoryId(null);
+    setFeedbackOpen(false);
+    setFeedbackText("");
+    setFeedbackThanks(false);
+  };
+  
+  /*
   const handleCancelReview = () => {
     setStep("editor");
     setResultImage(null);
@@ -409,6 +421,7 @@ async function sleep(ms: number): Promise<void> {
     setFeedbackText("");
     setFeedbackThanks(false);
   };
+  */
 
   const handleSubmitFeedback = () => {
     const trimmed = feedbackText.trim();
@@ -459,9 +472,9 @@ async function sleep(ms: number): Promise<void> {
             <h3 className="text-xl font-bold text-gray-900 tracking-tight sm:text-2xl">Before &amp; after</h3>
             <p className="text-sm leading-relaxed text-gray-600 max-w-xl">
               Your source image is on the left; the redesign is on the right. Drag the slider to compare, then choose{" "}
-              <span className="font-medium text-gray-800">OK</span> if you are happy,{" "}
-              <span className="font-medium text-gray-800">Give feedback</span> if not, or{" "}
-              <span className="font-medium text-gray-800">Cancel</span> to go back and edit again.
+              <span className="font-medium text-gray-800">Exit to Gallery</span> if you are satisfied,{" "}
+              <span className="font-medium text-gray-800">Refine this Result</span> to continue editing, or{" "}
+              <span className="font-medium text-gray-800">Restart</span> to start over again.
             </p>
           </div>
           <span className="shrink-0 self-start sm:self-auto inline-flex items-center rounded-full border border-emerald-200/90 bg-emerald-50/90 px-3 py-1.5 text-xs font-semibold text-emerald-800 shadow-sm">
@@ -478,22 +491,40 @@ async function sleep(ms: number): Promise<void> {
 
         <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/90 via-white to-teal-50/40 p-5 sm:p-6 shadow-sm space-y-4">
           <div className="flex flex-col gap-1">
-            <p className="text-sm font-semibold text-gray-900">Are you happy with this result?</p>
+            <p className="text-sm font-semibold text-gray-900">Image generation complete!</p>
             <p className="text-xs text-gray-600">
-              OK saves your session and opens the gallery. Feedback is sent to the study team. Cancel returns you to the
-              editor with your original photo.
+              You may now exit to the Gallery and see the photo(s) you have generated, restart with the same original photo, or go back to the editor to refine your image further. 
+              {/* If you're not happy with the result, please give feedback so we can improve the system! */}
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
             <button
-              type="button"
-              onClick={handleAcceptOk}
-              className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 px-5 rounded-xl bg-emerald-600 text-white font-semibold shadow-md hover:bg-emerald-700 hover:scale-[1.01] active:scale-[0.99] transition-all"
+            type="button"
+            onClick={() => handleExitGallery()}
+            className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-gray-900 text-white font-semibold shadow-lg hover:bg-black hover:scale-[1.01] active:scale-[0.99] transition-all"
             >
-              <Check size={18} strokeWidth={2.5} />
-              OK
+              Exit to Gallery
             </button>
+
+            <button
+            type="button"
+            onClick={() => handleRestart()}
+            className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl border border-gray-200 bg-white text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm hover:shadow"
+          >
+            <RotateCcw size={18} />
+            Restart
+          </button>
+
+          <button
+            type="button"
+            onClick={handleRefineResult}
+            className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-emerald-600 text-white font-semibold shadow-md hover:bg-emerald-700 hover:scale-[1.01] active:scale-[0.99] transition-all"
+          >
+            <Sparkles size={18} />
+            Refine This Result
+          </button>
+            {/*
             <button
               type="button"
               onClick={() => {
@@ -509,14 +540,7 @@ async function sleep(ms: number): Promise<void> {
               <MessageSquareText size={18} />
               Give feedback
             </button>
-            <button
-              type="button"
-              onClick={handleCancelReview}
-              className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 px-5 rounded-xl border border-gray-300 bg-white text-gray-700 font-semibold hover:bg-gray-100 transition-all"
-            >
-              <X size={18} />
-              Cancel
-            </button>
+            */}
           </div>
 
           {feedbackOpen && (
@@ -564,34 +588,8 @@ async function sleep(ms: number): Promise<void> {
             </p>
           )}
         </div>
-
+        {/*}
         <div className="flex flex-col sm:flex-row gap-4">
-          <button
-            type="button"
-            onClick={() => {
-              setSessionRound(1);
-              setStep("editor");
-              setResultImage(null);
-              setLastHistoryId(null);
-              setFeedbackOpen(false);
-              setFeedbackText("");
-              setFeedbackThanks(false);
-            }}
-            className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl border border-gray-200 bg-white text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm hover:shadow"
-          >
-            <RotateCcw size={18} />
-            Restart
-          </button>
-
-          <button
-            type="button"
-            onClick={handleRefineResult}
-            className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-emerald-600 text-white font-semibold shadow-md hover:bg-emerald-700 hover:scale-[1.01] active:scale-[0.99] transition-all"
-          >
-            <Sparkles size={18} />
-            Refine This Result
-          </button>
-
           <button
             type="button"
             onClick={() => navigate("/gallery")}
@@ -600,12 +598,14 @@ async function sleep(ms: number): Promise<void> {
             Exit to Gallery
           </button>
         </div>
-
+        */}
         <div className="space-y-3 border-t border-gray-100 pt-8">
+          {/*
           <p className="text-sm leading-relaxed text-gray-600">
             Explore curated samples below. Each card summarizes the look—tap to load it as your next editable photo
             (starts a new round).
           </p>
+          */}
           {/* <SuggestionGallery
             title="Suggested redesigns"
             suggestions={resultSuggestions}
