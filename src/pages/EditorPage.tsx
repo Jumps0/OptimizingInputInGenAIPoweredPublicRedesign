@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { loadPyodide, type PyodideInterface } from 'pyodide';
 import { useNavigate } from "react-router-dom";
 import ImageCapture from "@/components/ImageCapture";
 import { useAuth } from "@/context";
@@ -16,6 +17,8 @@ import {
   getRandomSuggestions,
   getRandomInitialSuggestions,
 } from "@/utils/suggestionImages";
+
+import runflux from '../runflux.py?raw'; // Python script for actual AI Image Editing
 
 type EditorStep = "upload" | "editor" | "result";
 type ToolType = "text" | "voice" | "inpainting" | "dragdrop";
@@ -125,52 +128,216 @@ const EditorPage = () => {
   //   setPlacedElements([]);
   // };
 
+/*
+async function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+*/
+
   const handleGenerate = async () => {
+    console.log("GENERATING IMAGE");
     setIsGenerating(true);
 
-    try {
-      if (previewUrl) {
-        let filteredImage;
-        if (activeTool === 'inpainting') {
-          filteredImage = await applyInpaintingFilter(previewUrl, inpaintingLines);
-        } else if (activeTool === 'dragdrop') {
-          filteredImage = await applyDragDropFilter(previewUrl, placedElements);
-        } else {
-          filteredImage = await applySepiaFilter(previewUrl);
-        }
+    //const [isPyodideReady, setIsPyodideReady] = useState<boolean>(false);
+    const pyodideRef = useRef<PyodideInterface | null>(null);
+    //const [running, setRunning] = useState<boolean>(false);
+
+    // Initialize Pyodide and load the script
+    useEffect(() => {
+    const initializePyodide = async () => {
+      try {
+        const pyodide = await loadPyodide({
+          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/" /* https://pyodide.org/en/stable/usage/quickstart.html */
+        });
         
-        setResultImage(filteredImage);
+        await pyodide.loadPackage("micropip") // Install micropip first so we can actually use it
+        pyodide.FS.writeFile('/home/pyodide/runflux.py', runflux);
 
-        let hid: number | null = null;
-        if (filteredImage && user) {
-          const saved = await saveNewGeneration(user.id, prompt, previewUrl, filteredImage);
-          hid = saved.id;
+        // Install required packages using micropip
+        // Note: This must be done BEFORE importing them in the script
+        await pyodide.runPythonAsync(`
+          import micropip
+
+          # Install packages - this downloads and installs them from PyPI
+          # Pillow (PIL) and requests are available as pure Python wheels
+          await micropip.install('pillow')
+          await micropip.install('requests')
+
+          print("✓ Packages installed successfully")
+        `);
+        
+        // Now write and import runflux.py
+        pyodide.FS.writeFile('runflux.py', runflux);
+        
+        await pyodide.runPythonAsync(`
+          import runflux
+
+          # Store reference to the functions
+          run_image_to_image = runflux.run_image_to_image
+          run_inpainting = runflux.run_inpainting
+          print("✓ Script loaded")
+        `);
+
+        pyodideRef.current = pyodide;
+          //setIsPyodideReady(true);
+        } catch (error) {
+          console.error('Failed to initialize Pyodide:', error);
         }
-        setLastHistoryId(hid);
+      };
 
-        setResultSuggestions(getRandomSuggestions(4));
-        setRealSuggestions(getRandomInitialSuggestions(4));
-        setStep("result");
+      initializePyodide();
+    }, []);
+
+    const callImageGeneration = async (): Promise<string | null> => {
+      if (!pyodideRef.current) {
+        console.error('Pyodide not ready');
+        return null;
       }
-    } catch (error) {
-      console.error("Failed to generate image:", error);
 
-      if (previewUrl) {
-        setResultImage(previewUrl);
+      try {
+        //setRunning(true);
 
-        let hid: number | null = null;
-        if (user) {
-          const saved = await saveNewGeneration(user.id, prompt, previewUrl, previewUrl);
-          hid = saved.id;
+        // ================== //
+        //  DETERMINE INPUTS  //
+        // ================== //
+
+        if(activeTool === "text"){
+          // Simple stuff, all we need is:
+          // - prompt (string)
+          // - previewUrl (string to the image)
+
+          // This will called run_image_to_image
+
+          // TODO
+
         }
-        setLastHistoryId(hid);
-        setResultSuggestions(getRandomSuggestions(4));
-        setRealSuggestions(getRandomInitialSuggestions(4));
-        setStep("result");
+        else if(activeTool === "voice"){
+          // Same as text, voice should have been pre-processed into a text prompt, so we need:
+          // - prompt (string)
+          // - previewUrl (string to the image)
+
+          // This will called run_image_to_image
+
+          // TODO
+
+        }
+        else if(activeTool === "inpainting"){
+          // This requires a bit more work, we need:
+          // - prompt (string)
+          // - previewUrl (string to the image)
+          // - inpaintingLines (array of {x1, y1, x2, y2} objects representing the lines drawn by the user). Gonna need to parse this into a black & white image
+
+          // This will call run_inpainting
+          
+          // Convert the lines to an actual mask. Remember: BLACK = NO CHANGE | WHITE = CHANGE
+
+          // TODO
+
+        }
+        else if(activeTool === "dragdrop"){
+          // The most complex (and annoying one). Uses inpainting in phases. This requires:
+          // - prompt (string)
+          // - previewUrl (string to the image)
+          // - inpaintingLines (array of {x1, y1, x2, y2} objects representing the lines drawn by the user). Gonna need to parse this into a black & white image
+
+          // This will call run_inpainting
+          
+          // Convert the lines to an actual mask. Remember: BLACK = NO CHANGE | WHITE = CHANGE
+
+          // TODO
+        }
+
+        // this will be replaced/moved later
+        const result = pyodideRef.current.runPython(`
+          #import runflux
+          result = None
+          if True:
+            result = runflux.run_inpainting()
+          else:
+            result = runflux.run_image_to_image()
+          #result # Return (?)
+        `);
+        
+        console.log(`Image generation finished.`);
+        return result;
+      } catch (error) {
+        console.error('Error calling Python function:', error);
+        return null;
+      } finally {
+        //setRunning(false);
       }
-    } finally {
-      setIsGenerating(false);
-    }
+    };
+
+    const handleProcess = async (): Promise<void> => {
+      try {
+        if (previewUrl) {
+          // Loading screen appears here
+
+          let hid: number | null = null;
+
+          if(true){ // OLD TEMP CODE. HERE TO NOT BREAK THINGS
+            let filteredImage;
+            if (activeTool === 'inpainting') {
+              filteredImage = await applyInpaintingFilter(previewUrl, inpaintingLines);
+            } else if (activeTool === 'dragdrop') {
+              filteredImage = await applyDragDropFilter(previewUrl, placedElements);
+            } else {
+              filteredImage = await applySepiaFilter(previewUrl);
+            }
+
+            setResultImage(filteredImage);
+
+            if (filteredImage && user) {
+              const saved = await saveNewGeneration(user.id, prompt, previewUrl, filteredImage);
+              hid = saved.id;
+            }
+          }
+          else{ // NEW CODE. DISABLED FOR NOW
+            
+            // Call the function
+            console.log("Calling image generation function...");
+            const result = await callImageGeneration();
+
+            // Set the result image
+            setResultImage(result);
+
+            if (result && user) {
+              const saved = await saveNewGeneration(1 /*user.id*/, prompt, "" /*previewUrl*/, "" /*result*/);
+              hid = saved.id;
+              console.log(`Generation saved with history ID: ${hid}`);
+            }
+            
+          }
+
+          setLastHistoryId(hid);
+          setResultSuggestions(getRandomSuggestions(4));
+          setRealSuggestions(getRandomInitialSuggestions(4));
+
+          setStep("result"); // After this step the new image is shown!
+
+        }
+      } catch (error) {
+        console.error("Failed to generate image:", error);
+
+        if (previewUrl) {
+          setResultImage(previewUrl);
+
+          let hid: number | null = null;
+          if (user) {
+            const saved = await saveNewGeneration(user.id, prompt, previewUrl, previewUrl);
+            hid = saved.id;
+          }
+          setLastHistoryId(hid);
+          setResultSuggestions(getRandomSuggestions(4));
+          setRealSuggestions(getRandomInitialSuggestions(4));
+          setStep("result");
+        }
+      } finally {
+        setIsGenerating(false);
+      }
+    };
+
+    handleProcess(); // Run it!
   };
 
   const renderTool = () => {
