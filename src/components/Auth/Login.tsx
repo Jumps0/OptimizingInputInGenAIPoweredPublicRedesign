@@ -44,8 +44,8 @@ const Login = () => {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-400 to-cyan-400 shadow-lg mb-4 transform transition-transform hover:scale-105 duration-300">
                 <Sparkles className="w-8 h-8 text-white" />
               </div>
-              <h1 className="text-3xl font-bold text-white tracking-tight">Access Image Modifier.</h1>
-              <p className="text-slate-300 text-sm">Enter the provided username to proceed.</p>
+              <h1 className="text-3xl font-bold text-white tracking-tight">Access Image Editor.</h1>
+              <p className="text-slate-300 text-sm">Enter the username you have been provided to proceed.</p>
             </div>
             
             <form onSubmit={handleSubmit} className="space-y-6">
