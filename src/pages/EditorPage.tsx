@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { loadPyodide, type PyodideInterface } from 'pyodide';
+//import { loadPyodide, type PyodideInterface } from 'pyodide';
 import { useNavigate } from "react-router-dom";
 import ImageCapture from "@/components/ImageCapture";
 import { useAuth } from "@/context";
@@ -18,7 +18,7 @@ import {
   getRandomInitialSuggestions,
 } from "@/utils/suggestionImages";
 
-import runflux from '../runflux.py?raw'; // Python script for actual AI Image Editing
+//import runflux from '../runflux.py?raw'; // Python script for actual AI Image Editing
 
 type EditorStep = "upload" | "editor" | "result";
 type ToolType = "text" | "voice" | "inpainting" | "dragdrop";
@@ -139,15 +139,16 @@ async function sleep(ms: number): Promise<void> {
     setIsGenerating(true);
 
     //const [isPyodideReady, setIsPyodideReady] = useState<boolean>(false);
-    const pyodideRef = useRef<PyodideInterface | null>(null);
+    //const pyodideRef = useRef<PyodideInterface | null>(null);
     //const [running, setRunning] = useState<boolean>(false);
 
     // Initialize Pyodide and load the script
+    /*
     useEffect(() => {
     const initializePyodide = async () => {
       try {
         const pyodide = await loadPyodide({
-          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/" /* https://pyodide.org/en/stable/usage/quickstart.html */
+          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/" // https://pyodide.org/en/stable/usage/quickstart.html
         });
         
         await pyodide.loadPackage("micropip") // Install micropip first so we can actually use it
@@ -187,7 +188,7 @@ async function sleep(ms: number): Promise<void> {
 
       initializePyodide();
     }, []);
-
+    
     const callImageGeneration = async (): Promise<string | null> => {
       if (!pyodideRef.current) {
         console.error('Pyodide not ready');
@@ -267,7 +268,7 @@ async function sleep(ms: number): Promise<void> {
         //setRunning(false);
       }
     };
-
+    */
     const handleProcess = async (): Promise<void> => {
       try {
         if (previewUrl) {
@@ -293,7 +294,7 @@ async function sleep(ms: number): Promise<void> {
             }
           }
           else{ // NEW CODE. DISABLED FOR NOW
-            
+            /*
             // Call the function
             console.log("Calling image generation function...");
             const result = await callImageGeneration();
@@ -302,11 +303,11 @@ async function sleep(ms: number): Promise<void> {
             setResultImage(result);
 
             if (result && user) {
-              const saved = await saveNewGeneration(1 /*user.id*/, prompt, "" /*previewUrl*/, "" /*result*/);
+              const saved = await saveNewGeneration(user.id, prompt, previewUrl, result);
               hid = saved.id;
               console.log(`Generation saved with history ID: ${hid}`);
             }
-            
+            */
           }
 
           setLastHistoryId(hid);
