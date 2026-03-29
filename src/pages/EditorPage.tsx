@@ -9,8 +9,9 @@ import type { LineType } from "@/components/Editor/InpaintingEditor";
 import type { DroppedElement } from "@/components/Editor/DragDropEditor";
 import {  Sparkles, RotateCcw, /*Check, MessageSquareText, X*/ } from "lucide-react";
 import ComparisonSlider from "@/components/ComparisonSlider";
-import { applySepiaFilter, /*applyInpaintingFilter, applyDragDropFilter*/ } from "@/utils/imageUtils";
+import { fetchImageBytes } from "@/utils/imageUtils";
 import { METHODS } from "@/utils/constants";
+
 // import SuggestionGallery from "@/components/SuggestionGallery";
 import {
   type SuggestionItem,
@@ -86,6 +87,15 @@ const EditorPage = () => {
     return tool === user.assignedMethod;
   };
 
+  const getMimeTypeFromFilename = (filename: string): string => {
+    const lower = filename.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.gif')) return 'image/gif';
+    if (lower.endsWith('.bmp')) return 'image/bmp';
+    return 'image/jpeg';
+  };
+
   const handleImageSelect = (_file: File, url: string) => {
     setPreviewUrl(url);
     setSessionRound(1);
@@ -141,6 +151,37 @@ const EditorPage = () => {
   1. All hooks must be put on the top lever, this is a hook --> const [isPyodideReady, setIsPyodideReady] = useState<boolean>(false);
      This is also a hook --> useEffect(() => { ... }, []);
   */
+  
+  // Basic debug function to show a specific image in a popup
+  const showImagePopup = (image: HTMLImageElement) => {
+    // Create popup div
+    const popup = document.createElement('div');
+    popup.style.position = 'fixed';
+    popup.style.top = '30%';
+    popup.style.left = '50%';
+    popup.style.transform = 'translate(-50%, -50%)';
+    popup.style.backgroundColor = 'white';
+    popup.style.padding = '20px';
+    popup.style.borderRadius = '8px';
+    popup.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
+    popup.style.zIndex = '1000';
+    popup.style.maxWidth = '40vw';
+    popup.style.maxHeight = '40vh';
+    
+    // Clone and display image
+    const img = image.cloneNode() as HTMLImageElement;
+    img.style.width = '100%';
+    img.style.height = 'auto';
+    img.style.objectFit = 'contain';
+    
+    popup.appendChild(img);
+    document.body.appendChild(popup);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+      popup.remove();
+    }, 5000);
+  }
 
   useEffect(() => {
     const initializePyodide = async () => {
@@ -240,7 +281,7 @@ const EditorPage = () => {
     setIsGenerating(true);
 
     // Initialize Pyodide and load the script
-    const callImageGeneration = async (prompt: string, previewUrl: string, inpaintingLines: any[], placedElements: any[]): Promise<string | null> => {
+    const callImageGeneration = async (inputPrompt: string, previewUrl: string, inpaintingLines: any[], placedElements: any[]): Promise<string | null> => {
       if (!pyodideRef.current) {
         console.error('Pyodide not ready');
         return null;
@@ -251,26 +292,54 @@ const EditorPage = () => {
       try {
         //setRunning(true);
 
+        // Convert image URL to bytes and write it into pyodide's virtual filesystem.
+        const { bytes, fileName: inputFileName } = await fetchImageBytes(previewUrl);
+        pyodideRef.current.FS.writeFile(inputFileName, bytes);
+
+        // Function input reminder:
+        // > run_image_to_image(image: Image, prompt: str, api_key: str) -> Any
+        // > run_inpainting(image: Image, mask: Image, prompt: str, api_key: str) -> Any
+        // Output is a path 'output_file'
+
+        // (Testing only) Ask for API key
+        const apiKey = window.prompt('Insert API key');
+        if (!apiKey) {
+          console.error("API key is required");
+          return null;
+        }
+        
         // ================== //
         //  DETERMINE INPUTS  //
         // ================== //
 
-        if(activeTool === "text"){
-          console.log("...to perform text-to-image. Prompt:", prompt);
+        if (activeTool === "text"){
+          console.log("...to perform text-to-image. Prompt:", inputPrompt);
           // Simple stuff, all we need is:
-          // - prompt (string)
-          // - previewUrl (string to the image)
+          // - inputPrompt (string)
+          // - baseImage (the image to modify)
 
-          // This will called run_image_to_image
+          // This will call run_image_to_image
+          
+          const resultPath = pyodideRef.current.runPython(`
+            import runflux
+            result = runflux.run_image_to_image(${JSON.stringify(inputFileName)}, ${JSON.stringify(inputPrompt)}, ${JSON.stringify(apiKey)})
+            result
+          `);
 
-          // TODO
-
+          if (resultPath) {
+            const outputFileName = String(resultPath);
+            const outputBytes = pyodideRef.current.FS.readFile(outputFileName);
+            const outputBlob = new Blob([outputBytes], {
+              type: getMimeTypeFromFilename(outputFileName),
+            });
+            return URL.createObjectURL(outputBlob);
+          }
         }
         else if(activeTool === "voice"){
-          console.log("...to perform voice-to-image. Prompt:", prompt);
+          console.log("...to perform voice-to-image. Prompt:", inputPrompt);
           // Same as text, voice should have been pre-processed into a text prompt, so we need:
-          // - prompt (string)
-          // - previewUrl (string to the image)
+          // - inputPrompt (string)
+          // - baseImage (the image to modify)
 
           // This will called run_image_to_image
 
@@ -278,10 +347,10 @@ const EditorPage = () => {
 
         }
         else if(activeTool === "inpainting"){
-          console.log("...to perform inpainting. Prompt:", prompt);
+          console.log("...to perform inpainting. Prompt:", inputPrompt);
           // This requires a bit more work, we need:
-          // - prompt (string)
-          // - previewUrl (string to the image)
+          // - inputPrompt (string)
+          // - baseImage (the image to modify)
           // - inpaintingLines (array of {x1, y1, x2, y2} objects representing the lines drawn by the user). Gonna need to parse this into a black & white image
 
           // This will call run_inpainting
@@ -294,8 +363,8 @@ const EditorPage = () => {
         else if(activeTool === "dragdrop"){
           console.log("...to perform drag & drop.");
           // The most complex (and annoying one). Uses inpainting in phases. This requires:
-          // - prompt (string)
-          // - previewUrl (string to the image)
+          // - inputPrompt (string)
+          // - baseImage (the image to modify)
           // - inpaintingLines (array of {x1, y1, x2, y2} objects representing the lines drawn by the user). Gonna need to parse this into a black & white image
 
           // This will call run_inpainting
@@ -321,7 +390,8 @@ const EditorPage = () => {
         if(false){console.log(/*result, */inpaintingLines, placedElements)}; // warning remover
 
         console.log(`Image generation finished.`);
-        return await applySepiaFilter(previewUrl);; // TEMPORARY | return result;
+        //return await applySepiaFilter(previewUrl);
+        return resultImage;
       } catch (error) {
         console.error('Error calling Python function:', error);
         return null;
@@ -917,7 +987,7 @@ const EditorPage = () => {
   );
 
   if(false){ // Here to remove warning
-      console.log(resultSuggestions, realSuggestions, handleBack);
+      console.log(resultSuggestions, realSuggestions, handleBack, showImagePopup);
   }
 };
 

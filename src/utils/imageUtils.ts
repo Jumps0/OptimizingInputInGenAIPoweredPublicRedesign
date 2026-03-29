@@ -273,6 +273,82 @@ export const applyGrayscaleFilter = async (imageUrl: string): Promise<string> =>
   });
 };
 
+export const urlToImage = async (imageUrl: string): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    
+    // Only set crossOrigin if it's not a local blob/data URL
+    if (!imageUrl.startsWith('data:') && !imageUrl.startsWith('blob:')) {
+      img.crossOrigin = "Anonymous";
+    }
+
+    img.onload = () => {
+      resolve(img);
+    };
+
+    img.onerror = (err) => {
+      console.error("Error loading image:", err);
+      reject(new Error("Failed to load image"));
+    };
+
+    img.src = imageUrl;
+  });
+};
+
+const mimeTypeToExtension = (mimeType: string): string => {
+  if (mimeType.includes('png')) return '.png';
+  if (mimeType.includes('jpeg') || mimeType.includes('jpg')) return '.jpg';
+  if (mimeType.includes('webp')) return '.webp';
+  if (mimeType.includes('gif')) return '.gif';
+  if (mimeType.includes('bmp')) return '.bmp';
+  return '.png';
+};
+
+const getExtensionFromUrl = (imageUrl: string): string | null => {
+  try {
+    const url = new URL(imageUrl, window.location.href);
+    const match = url.pathname.match(/\.(png|jpe?g|webp|gif|bmp)(?:$|\?)/i);
+    return match ? match[0].toLowerCase() : null;
+  } catch {
+    return null;
+  }
+};
+
+export const fetchImageBytes = async (imageUrl: string): Promise<{ bytes: Uint8Array; fileName: string }> => {
+  if (imageUrl.startsWith('data:')) {
+    const match = imageUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/);
+    if (!match) {
+      throw new Error('Unsupported data URL format');
+    }
+
+    const [, mimeType, base64Data] = match;
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i += 1) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    return {
+      bytes,
+      fileName: `input_image${mimeTypeToExtension(mimeType)}`,
+    };
+  }
+
+  const response = await fetch(imageUrl);
+  if (!response.ok) {
+    throw new Error(`Unable to fetch image: ${response.status} ${response.statusText}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const contentType = response.headers.get('content-type') ?? '';
+  const extension = getExtensionFromUrl(imageUrl) || mimeTypeToExtension(contentType) || '.png';
+
+  return {
+    bytes: new Uint8Array(arrayBuffer),
+    fileName: `input_image${extension}`,
+  };
+};
+
 export const downloadImage = (imageUrl: string, filename: string = 'redesigned-space.jpg') => {
   const link = document.createElement('a');
   link.href = imageUrl;
