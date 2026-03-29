@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-//import { loadPyodide, type PyodideInterface } from 'pyodide';
+import { loadPyodide, type PyodideInterface } from 'pyodide';
 import { useNavigate } from "react-router-dom";
 import ImageCapture from "@/components/ImageCapture";
 import { useAuth } from "@/context";
@@ -18,7 +18,7 @@ import {
   getRandomInitialSuggestions,
 } from "@/utils/suggestionImages";
 
-//import runflux from '../runflux.py?raw'; // Python script for actual AI Image Editing
+import runflux from '../runflux.py?raw'; // Python script for actual AI Image Editing
 
 type EditorStep = "upload" | "editor" | "result";
 type ToolType = "text" | "voice" | "inpainting" | "dragdrop";
@@ -50,6 +50,10 @@ const EditorPage = () => {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackThanks, setFeedbackThanks] = useState(false);
+
+  const [loading, setLoading] = useState<boolean>(false);
+  const [isPyodideReady, setIsPyodideReady] = useState<boolean>(false);
+  const pyodideRef = useRef<PyodideInterface | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -128,15 +132,113 @@ const EditorPage = () => {
   //   setPlacedElements([]);
   // };
 
-/*
-async function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
-*/
+  /*
+  async function sleep(ms: number): Promise<void> {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+  */
+
+  /*
+  ===== HOW TO AVOID 301 / 310 / 321 ERRORS ======
+  1. All hooks must be put on the top lever, this is a hook --> const [isPyodideReady, setIsPyodideReady] = useState<boolean>(false);
+     This is also a hook --> useEffect(() => { ... }, []);
+  */
+
+  useEffect(() => {
+    const initializePyodide = async () => {
+      if(isPyodideReady) return; // Only call when needed
+
+      console.log("⟳ Initializing Pyodide...");
+
+      try {
+        const pyodide = await loadPyodide({
+          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/" /* https://pyodide.org/en/stable/usage/quickstart.html */
+        });
+        
+        await pyodide.loadPackage("micropip") // Install micropip first so we can actually use it
+        pyodide.FS.writeFile('/home/pyodide/runflux.py', runflux);
+
+        // Install required packages using micropip
+        // Note: This must be done BEFORE importing them in the script
+        await pyodide.runPythonAsync(`
+          import micropip
+
+          # Install packages - this downloads and installs them from PyPI
+          # Pillow (PIL) and requests are available as pure Python wheels
+          await micropip.install('pillow')
+          await micropip.install('requests')
+
+          print("✓ Packages installed successfully")
+        `);
+        
+        // Now write and import runflux.py
+        pyodide.FS.writeFile('runflux.py', runflux);
+        
+        await pyodide.runPythonAsync(`
+          import runflux
+
+          # Store reference to the function
+          testprint = runflux.testprint
+          print("✓ Function(s) loaded")
+        `);
+
+        pyodideRef.current = pyodide;
+        setIsPyodideReady(true);
+        console.log("✓ Pyrodide is ready");
+      } catch (error) {
+        console.error('Failed to initialize Pyodide:', error);
+      }
+    };
+
+    initializePyodide();
+    }, []);
+
+  const testFunc = async () => {
+    console.log("Call");
+
+    
+    console.log(loading);
+
+
+    const callPythonFunction = async (inputString: string): Promise<string | null> => {
+      if (!pyodideRef.current) {
+        console.error('Pyodide not ready');
+        return null;
+      }
+
+      try {
+        setLoading(true);
+        const escapedInput = inputString.replace(/"/g, '\\"');
+
+        const result = pyodideRef.current.runPython(`
+          import runflux
+          result = runflux.testprint("${escapedInput}")
+          result
+        `);
+        
+        console.log(`Input: "${inputString}" → Output: "${result}"`);
+        return result;
+      } catch (error) {
+        console.error('Error calling Python function:', error);
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const handleProcessString = async (): Promise<void> => {
+      const testString = "Hello, world ";
+      const result = await callPythonFunction(testString);
+      console.log('Final result:', result);
+    };
+    
+    handleProcessString();
+  };
 
   const handleGenerate = async () => {
     console.log("GENERATING IMAGE");
     setIsGenerating(true);
+    testFunc();
 
     //const [isPyodideReady, setIsPyodideReady] = useState<boolean>(false);
     //const pyodideRef = useRef<PyodideInterface | null>(null);
@@ -376,7 +478,7 @@ async function sleep(ms: number): Promise<void> {
     }
   };
 
-  console.log(resultSuggestions, realSuggestions);
+  //console.log(resultSuggestions, realSuggestions);
 
   const handleRefineResult = () => {
     if (resultImage) {
@@ -790,8 +892,6 @@ async function sleep(ms: number): Promise<void> {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
-   
-
       {/* Main Content - Scrollable */}
       <div className="flex-1 overflow-y-auto scroll-smooth">
         <div className="max-w-3xl mx-auto px-6 py-8 pb-32 min-h-full">
@@ -856,6 +956,10 @@ async function sleep(ms: number): Promise<void> {
       )}
     </div>
   );
+
+  if(false){ // Here to remove warning
+      console.log(resultSuggestions, realSuggestions);
+  }
 };
 
 export default EditorPage;
