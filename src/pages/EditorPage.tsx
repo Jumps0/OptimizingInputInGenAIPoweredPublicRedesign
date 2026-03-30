@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { loadPyodide, type PyodideInterface } from 'pyodide';
 import { useNavigate } from "react-router-dom";
 import ImageCapture from "@/components/ImageCapture";
 import { useAuth } from "@/context";
@@ -10,6 +9,7 @@ import type { DroppedElement } from "@/components/Editor/DragDropEditor";
 import {  Sparkles, RotateCcw, /*Check, MessageSquareText, X*/ } from "lucide-react";
 import ComparisonSlider from "@/components/ComparisonSlider";
 import { METHODS } from "@/utils/constants";
+//import { applySepiaFilter } from "@/utils/imageUtils";
 
 // import SuggestionGallery from "@/components/SuggestionGallery";
 import {
@@ -18,7 +18,6 @@ import {
   getRandomInitialSuggestions,
 } from "@/utils/suggestionImages";
 
-import runflux from '../runflux.py?raw'; // Python script for actual AI Image Editing
 
 type EditorStep = "upload" | "editor" | "result";
 type ToolType = "text" | "voice" | "inpainting" | "dragdrop";
@@ -50,10 +49,6 @@ const EditorPage = () => {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackThanks, setFeedbackThanks] = useState(false);
-
-  const [loading, setLoading] = useState<boolean>(false);
-  const [isPyodideReady, setIsPyodideReady] = useState<boolean>(false);
-  const pyodideRef = useRef<PyodideInterface | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -106,7 +101,7 @@ const EditorPage = () => {
     });
   };
 
-  const createBflGeneration = async (prompt: string, encodedImage: string) => {
+  const bflImage2Image = async (prompt: string, encodedImage: string) => {
     const response = await fetch('/api/bfl/proxy-bfl', {
       method: 'POST',
       headers: {
@@ -137,6 +132,7 @@ const EditorPage = () => {
     let attempt = 0;
 
     while (attempt < maxAttempts) {
+      console.log(`Polling BFL generation (attempt ${attempt + 1}/${maxAttempts})...`);
       const response = await fetch(`/api/bfl/proxy-bfl?${params.toString()}`);
       const data = await response.json();
       if (!response.ok) {
@@ -204,12 +200,6 @@ const EditorPage = () => {
   // };
 
   /*
-  async function sleep(ms: number): Promise<void> {
-      return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-  */
-
-  /*
   ===== HOW TO AVOID 301 / 310 / 321 ERRORS ======
   1. All hooks must be put on the top lever, this is a hook --> const [isPyodideReady, setIsPyodideReady] = useState<boolean>(false);
      This is also a hook --> useEffect(() => { ... }, []);
@@ -246,6 +236,7 @@ const EditorPage = () => {
     }, 5000);
   }
 
+  /*
   useEffect(() => {
     const initializePyodide = async () => {
       if(isPyodideReady) return; // Only call when needed
@@ -254,7 +245,7 @@ const EditorPage = () => {
 
       try {
         const pyodide = await loadPyodide({
-          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/" /* https://pyodide.org/en/stable/usage/quickstart.html */
+          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/" // https://pyodide.org/en/stable/usage/quickstart.html
         });
         
         await pyodide.loadPackage("micropip") // Install micropip first so we can actually use it
@@ -338,6 +329,7 @@ const EditorPage = () => {
     
     handleProcessString();
   };
+  */
 
   const handleGenerate = async () => {
     console.log("GENERATING IMAGE");
@@ -347,6 +339,7 @@ const EditorPage = () => {
     const callImageGeneration = async (inputPrompt: string, previewUrl: string, _inpaintingLines: any[], _placedElements: any[]): Promise<string | null> => {
       console.log("...running generation logic...");
 
+      //return await applySepiaFilter(previewUrl); // TEMP
       try {
         const encodedImage = await fetchImageAsBase64(previewUrl);
 
@@ -399,7 +392,7 @@ const EditorPage = () => {
           // TODO
         }
 
-        const createResult = await createBflGeneration(inputPrompt, encodedImage);
+        const createResult = await bflImage2Image(inputPrompt, encodedImage);
 
         const requestId = createResult?.id;
         const pollingUrl = createResult?.polling_url;
@@ -417,6 +410,7 @@ const EditorPage = () => {
           return null;
         }
 
+        console.log('Generation successful.');
         return outputUrl;
       } catch (error) {
         console.error('Error calling backend proxy:', error);
@@ -424,8 +418,6 @@ const EditorPage = () => {
       }
     };
 
-    if(false) {testFunc()}; // removes warnings
-    
     const handleProcess = async (): Promise<void> => {
       try {
         if (previewUrl) {
