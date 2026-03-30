@@ -9,7 +9,6 @@ import type { LineType } from "@/components/Editor/InpaintingEditor";
 import type { DroppedElement } from "@/components/Editor/DragDropEditor";
 import {  Sparkles, RotateCcw, /*Check, MessageSquareText, X*/ } from "lucide-react";
 import ComparisonSlider from "@/components/ComparisonSlider";
-import { fetchImageBytes } from "@/utils/imageUtils";
 import { METHODS } from "@/utils/constants";
 
 // import SuggestionGallery from "@/components/SuggestionGallery";
@@ -87,13 +86,77 @@ const EditorPage = () => {
     return tool === user.assignedMethod;
   };
 
-  const getMimeTypeFromFilename = (filename: string): string => {
-    const lower = filename.toLowerCase();
-    if (lower.endsWith('.png')) return 'image/png';
-    if (lower.endsWith('.webp')) return 'image/webp';
-    if (lower.endsWith('.gif')) return 'image/gif';
-    if (lower.endsWith('.bmp')) return 'image/bmp';
-    return 'image/jpeg';
+
+  const fetchImageAsBase64 = async (imageUrl: string): Promise<string> => {
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to load image for upload: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        const base64 = dataUrl.split(',')[1] || '';
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const createBflGeneration = async (prompt: string, encodedImage: string) => {
+    const response = await fetch('/api/bfl/proxy-bfl', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt,
+        encoded_image: encodedImage,
+        model: 'flux-2-klein-9b',
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.error || 'BFL proxy request failed');
+    }
+    return data;
+  };
+
+  const pollBflGeneration = async (id: string, pollingUrl?: string) => {
+    const params = new URLSearchParams();
+    params.set('id', id);
+    if (pollingUrl) {
+      params.set('polling_url', String(pollingUrl));
+    }
+
+    const maxAttempts = 30;
+    let attempt = 0;
+
+    while (attempt < maxAttempts) {
+      const response = await fetch(`/api/bfl/proxy-bfl?${params.toString()}`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || 'BFL proxy polling failed');
+      }
+
+      const status = String(data?.status || '').toLowerCase();
+      if (status === 'ready') {
+        return data;
+      }
+
+      if (['error', 'failed'].includes(status)) {
+        throw new Error(data?.error || `BFL returned ${data?.status}`);
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      attempt += 1;
+    }
+
+    throw new Error('BFL generation polling timed out');
   };
 
   const handleImageSelect = (_file: File, url: string) => {
@@ -281,33 +344,12 @@ const EditorPage = () => {
     setIsGenerating(true);
 
     // Initialize Pyodide and load the script
-    const callImageGeneration = async (inputPrompt: string, previewUrl: string, inpaintingLines: any[], placedElements: any[]): Promise<string | null> => {
-      if (!pyodideRef.current) {
-        console.error('Pyodide not ready');
-        return null;
-      }
-
+    const callImageGeneration = async (inputPrompt: string, previewUrl: string, _inpaintingLines: any[], _placedElements: any[]): Promise<string | null> => {
       console.log("...running generation logic...");
 
       try {
-        //setRunning(true);
+        const encodedImage = await fetchImageAsBase64(previewUrl);
 
-        // Convert image URL to bytes and write it into pyodide's virtual filesystem.
-        const { bytes, fileName: inputFileName } = await fetchImageBytes(previewUrl);
-        pyodideRef.current.FS.writeFile(inputFileName, bytes);
-
-        // Function input reminder:
-        // > run_image_to_image(image: Image, prompt: str, api_key: str) -> Any
-        // > run_inpainting(image: Image, mask: Image, prompt: str, api_key: str) -> Any
-        // Output is a path 'output_file'
-
-        // (Testing only) Ask for API key
-        const apiKey = window.prompt('Insert API key');
-        if (!apiKey) {
-          console.error("API key is required");
-          return null;
-        }
-        
         // ================== //
         //  DETERMINE INPUTS  //
         // ================== //
@@ -317,23 +359,6 @@ const EditorPage = () => {
           // Simple stuff, all we need is:
           // - inputPrompt (string)
           // - baseImage (the image to modify)
-
-          // This will call run_image_to_image
-          
-          const resultPath = pyodideRef.current.runPython(`
-            import runflux
-            result = runflux.run_image_to_image(${JSON.stringify(inputFileName)}, ${JSON.stringify(inputPrompt)}, ${JSON.stringify(apiKey)})
-            result
-          `);
-
-          if (resultPath) {
-            const outputFileName = String(resultPath);
-            const outputBytes = pyodideRef.current.FS.readFile(outputFileName);
-            const outputBlob = new Blob([outputBytes], {
-              type: getMimeTypeFromFilename(outputFileName),
-            });
-            return URL.createObjectURL(outputBlob);
-          }
         }
         else if(activeTool === "voice"){
           console.log("...to perform voice-to-image. Prompt:", inputPrompt);
@@ -374,29 +399,28 @@ const EditorPage = () => {
           // TODO
         }
 
-        // this will be replaced/moved later
-        /*
-        const result = pyodideRef.current.runPython(`
-          #import runflux
-          result = None
-          if True:
-            result = runflux.run_inpainting()
-          else:
-            result = runflux.run_image_to_image()
-          #result # Return (?)
-        `);
-        */
-        
-        if(false){console.log(/*result, */inpaintingLines, placedElements)}; // warning remover
+        const createResult = await createBflGeneration(inputPrompt, encodedImage);
 
-        console.log(`Image generation finished.`);
-        //return await applySepiaFilter(previewUrl);
-        return resultImage;
+        const requestId = createResult?.id;
+        const pollingUrl = createResult?.polling_url;
+
+        if (!requestId) {
+          console.error('No generation ID returned from BFL proxy:', createResult);
+          return null;
+        }
+
+        const pollResult = await pollBflGeneration(String(requestId), pollingUrl);
+        const outputUrl = pollResult?.result?.sample || pollResult?.sample;
+
+        if (!outputUrl) {
+          console.error('BFL proxy returned no output URL:', pollResult);
+          return null;
+        }
+
+        return outputUrl;
       } catch (error) {
-        console.error('Error calling Python function:', error);
+        console.error('Error calling backend proxy:', error);
         return null;
-      } finally {
-        //setRunning(false);
       }
     };
 
