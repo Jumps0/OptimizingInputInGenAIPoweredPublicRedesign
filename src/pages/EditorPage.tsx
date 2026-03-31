@@ -36,6 +36,7 @@ const EditorPage = () => {
   );
 
   const [prompt, setPrompt] = useState("");
+  const [generatedResult, setGeneratedResult] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [resultImage, setResultImage] = useState<string | null>(null);
 
@@ -378,6 +379,8 @@ const EditorPage = () => {
           // Simple stuff, all we need is:
           // - inputPrompt (string)
           // - baseImage (the image to modify)
+
+          setGeneratedResult(await bflImage2Image(inputPrompt, encodedImage));
         }
         else if(activeTool === "voice"){
           console.log("...to perform voice-to-image. Prompt:", inputPrompt);
@@ -385,10 +388,7 @@ const EditorPage = () => {
           // - inputPrompt (string)
           // - baseImage (the image to modify)
 
-          // This will called run_image_to_image
-
-          // TODO
-
+          setGeneratedResult(await bflImage2Image(inputPrompt, encodedImage));
         }
         else if(activeTool === "inpainting"){
           console.log("...to perform inpainting. Prompt:", inputPrompt);
@@ -418,13 +418,11 @@ const EditorPage = () => {
           // TODO
         }
 
-        const createResult = await bflImage2Image(inputPrompt, encodedImage);
-
-        const requestId = createResult?.id;
-        const pollingUrl = createResult?.polling_url;
+        const requestId = generatedResult?.id;
+        const pollingUrl = generatedResult?.polling_url;
 
         if (!requestId) {
-          console.error('No generation ID returned from BFL proxy:', createResult);
+          console.error('No generation ID returned from BFL proxy:', generatedResult);
           return null;
         }
 
