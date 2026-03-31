@@ -121,6 +121,32 @@ const EditorPage = () => {
     return data;
   };
 
+  /*
+  const bflInpainting = async (prompt: string, encodedImage: string, _inpaintingLines: any[]) => {
+    const response = await fetch('/api/bfl/proxy-bfl', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt,
+        encoded_image: encodedImage,
+        model: 'flux-pro-1.0-fill',
+        "mask": encoded_mask,
+        "steps": 50,
+        "guidance": 30,
+        "output_format": 'jpeg',
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.error || 'BFL proxy request failed');
+    }
+    return data;
+  };
+  */
+
   const pollBflGeneration = async (id: string, pollingUrl?: string) => {
     const params = new URLSearchParams();
     params.set('id', id);
@@ -946,7 +972,7 @@ const EditorPage = () => {
 
       {/* Footer / Floating Action Bar - Fixed/Sticky */}
       {step !== "result" && (
-        <div className="absolute left-0 right-0 p-6 bg-gradient-to-t from-white via-white/95 to-transparent z-60 pointer-events-none bottom-[72px] md:bottom-0">
+        <div className="fixed left-0 right-0 p-6 bg-gradient-to-t from-white via-white/95 to-transparent z-60 pointer-events-none bottom-[max(72px,env(safe-area-inset-bottom))] md:bottom-0">
           <div className="max-w-3xl mx-auto pointer-events-auto">
             <button
               onClick={handleGenerate}
