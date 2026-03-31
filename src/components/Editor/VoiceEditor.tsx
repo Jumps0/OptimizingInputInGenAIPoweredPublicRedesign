@@ -80,8 +80,8 @@ const VoiceEditor = ({ prompt, onPromptChange }: VoiceEditorProps) => {
       const recognition = new SpeechRecognition();
       recognitionRef.current = recognition;
 
-      recognition.continuous = true;
-      recognition.interimResults = true;
+      recognition.continuous = false;
+      recognition.interimResults = false;
       recognition.maxAlternatives = 1;
       recognition.lang = 'en-US';
 
