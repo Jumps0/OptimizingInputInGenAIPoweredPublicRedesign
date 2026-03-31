@@ -440,6 +440,22 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
           className="w-full h-24 p-4 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm bg-gray-50 transition-all"
         />
       </div>
+
+      {/* Instructions / Tips */}
+      <div className="bg-blue-100 border border-blue-200 text-blue-700 p-4 rounded-lg shadow-sm">
+        <h4 className="font-semibold text-lg mb-2">How to Use</h4>
+        <p className="text-sm">
+          Use the brush to <span className="font-medium text-blue-700">paint over</span> areas you want to edit, and the eraser to remove any unwanted marks. Use the pan tool to move around the image, and the zoom controls to get a closer look. When you're done, <span className="font-medium text-blue-700">enter a prompt</span> describing your desired edits.
+        </p>
+      </div>
+      <div className="bg-blue-100 p-4 rounded-lg border border-blue-100">
+        <h4 className="text-sm font-semibold text-blue-800 mb-2">Tips for better results:</h4>
+        <ul className="text-sm text-blue-700 list-disc list-inside space-y-1">
+          <li>Mention specific materials (wood, stone, metal)</li>
+          <li>Describe lighting (sunny, sunset, evening)</li>
+          <li>Specify styles (modern, classical, eco-friendly)</li>
+        </ul>
+      </div>
     </div>
   );
 };

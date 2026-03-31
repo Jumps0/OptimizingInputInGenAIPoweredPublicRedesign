@@ -214,6 +214,14 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
         </div>
       </div>
       
+      {/* Instructions / Tips */}
+      <div className="bg-blue-100 border border-blue-200 text-blue-700 p-4 rounded-lg shadow-sm">
+        <h4 className="font-semibold text-lg mb-2">How to Use</h4>
+        <p className="text-sm">
+          Drag elements from the toolbar onto the workspace. Drag them to reposition, and click the 'x' to delete them.
+        </p>
+      </div>
+
       {/* Stats / Clear */}
       {placedElements.length > 0 && (
         <div className="flex justify-between items-center px-2">

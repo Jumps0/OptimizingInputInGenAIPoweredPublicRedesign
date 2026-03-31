@@ -208,9 +208,19 @@ const VoiceEditor = ({ prompt, onPromptChange }: VoiceEditorProps) => {
       )}
       
       {!error && (
+        <div>
          <div className="flex items-start gap-2 bg-blue-50 p-3 rounded-md border border-blue-100 text-sm text-blue-800 w-full">
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
             <p>Voice commands are enabled. Try saying "Add some trees" or "Remove the cars".</p>
+         </div>
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+          <h4 className="text-sm font-semibold text-blue-800 mb-2">Tips for better results:</h4>
+          <ul className="text-sm text-blue-700 list-disc list-inside space-y-1">
+            <li>Mention specific materials (wood, stone, metal)</li>
+            <li>Describe lighting (sunny, sunset, evening)</li>
+            <li>Specify styles (modern, classical, eco-friendly)</li>
+          </ul>
+          </div>
          </div>
       )}
     </div>

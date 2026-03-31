@@ -1007,65 +1007,65 @@ const EditorPage = () => {
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
       {/* Main Content - Scrollable */}
       <div className="flex-1 overflow-y-auto scroll-smooth">
-        <div className="max-w-3xl mx-auto px-6 py-8 pb-32 min-h-full">
-          {step === "result" ? renderResult() : renderEditor()}
-        </div>
+      <div className="max-w-3xl mx-auto px-6 py-8 pb-32 min-h-full">
+        {step === "result" ? renderResult() : renderEditor()}
+      </div>
       </div>
 
       {/* Footer / Floating Action Bar - Fixed/Sticky */}
       {step !== "result" && (
-        <div className="fixed left-0 right-0 p-6 bg-gradient-to-t from-white via-white/95 to-transparent z-60 pointer-events-none bottom-[max(72px,env(safe-area-inset-bottom))] md:bottom-0">
-          <div className="max-w-3xl mx-auto pointer-events-auto">
-            <button
-              onClick={handleGenerate}
-              disabled={(() => {
-                if (isGenerating) return true;
+      <div className="fixed left-0 right-0 p-6 bg-gradient-to-t from-white via-white/95 to-transparent z-60 pointer-events-none bottom-[max(72px,env(safe-area-inset-bottom))] md:bottom-0">
+        <div className="max-w-3xl mx-auto pointer-events-auto">
+        {(() => {
+          const canGenerate = (() => {
+          if (activeTool === "text") return prompt.trim();
+          if (activeTool === "voice") return prompt.trim();
+          if (activeTool === "inpainting") {
+            return inpaintingLines.length > 0 && prompt.trim();
+          }
+          if (activeTool === "dragdrop") {
+            return placedElements.length > 0 && prompt.trim();
+          }
+          return false;
+          })();
 
-                // Each method has its own minimal input requirements.
-                if (activeTool === "text") return !prompt.trim();
-                if (activeTool === "voice") return !prompt.trim();
-
-                if (activeTool === "inpainting") {
-                  return inpaintingLines.length === 0 || !prompt.trim();
-                }
-
-                if (activeTool === "dragdrop") {
-                  return placedElements.length === 0 || !prompt.trim();
-                }
-
-                return true;
-              })()}
-              className={`w-full relative group overflow-hidden py-4 px-8 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-1 active:translate-y-0
-              ${
-                isGenerating
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
-                  : "bg-gray-900 text-white hover:bg-black"
-              }
-              `}
-            >
-              {/* Background gradient effect on hover */}
-              {!isGenerating && (
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
-              )}
-              
-              {isGenerating ? (
-                <>
-                  <div className="animate-spin h-5 w-5 rounded-full border-[2.5px] border-gray-300 border-t-emerald-500"></div>
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-500 to-gray-400">
-                    Generating your edited image... this usually takes 10-30 seconds.
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5 text-emerald-400 animate-pulse" />
-                  <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
-                    Generate Redesign
-                  </span>
-                </>
-              )}
-            </button>
-          </div>
+          return canGenerate ? (
+          <button
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className={`w-full relative group overflow-hidden py-4 px-8 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-1 active:translate-y-0
+            ${
+            isGenerating
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+              : "bg-gray-900 text-white hover:bg-black"
+            }
+            `}
+          >
+            {/* Background gradient effect on hover */}
+            {!isGenerating && (
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
+            )}
+            
+            {isGenerating ? (
+            <>
+              <div className="animate-spin h-5 w-5 rounded-full border-[2.5px] border-gray-300 border-t-emerald-500"></div>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-500 to-gray-400">
+              Generating your edited image... this usually takes 10-30 seconds.
+              </span>
+            </>
+            ) : (
+            <>
+              <Sparkles className="w-5 h-5 text-emerald-400 animate-pulse" />
+              <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
+              Generate Redesign
+              </span>
+            </>
+            )}
+          </button>
+          ) : null;
+        })()}
         </div>
+      </div>
       )}
     </div>
   );
