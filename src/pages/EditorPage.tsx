@@ -9,7 +9,7 @@ import type { DroppedElement } from "@/components/Editor/DragDropEditor";
 import {  Sparkles, RotateCcw, /*Check, MessageSquareText, X*/ } from "lucide-react";
 import ComparisonSlider from "@/components/ComparisonSlider";
 import { METHODS } from "@/utils/constants";
-//import { applySepiaFilter } from "@/utils/imageUtils";
+import { /*applySepiaFilter, */applyInpaintingFilter, /*applyDragDropFilter*/ } from "@/utils/imageUtils";
 
 // import SuggestionGallery from "@/components/SuggestionGallery";
 import {
@@ -375,6 +375,7 @@ const EditorPage = () => {
         //  DETERMINE INPUTS  //
         // ================== //
 
+        // DEV NOTE: Yes, I know this looks bad. It's done this way to avoid await errors. There's probably a way to avoid this without repeating the logic each time.
         if (activeTool === "text"){
           console.log("...to perform text-to-image. Prompt:", inputPrompt);
           // Simple stuff, all we need is:
@@ -441,7 +442,7 @@ const EditorPage = () => {
           // Convert the lines to an actual mask. Remember: BLACK = NO CHANGE | WHITE = CHANGE
 
           // TODO
-          return null;
+          return await applyInpaintingFilter(previewUrl, inpaintingLines);;
         }
         else if(activeTool === "dragdrop"){
           console.log("...to perform drag & drop.");

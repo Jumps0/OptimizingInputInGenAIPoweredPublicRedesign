@@ -85,69 +85,57 @@ export const applyInpaintingFilter = async (imageUrl: string, lines: LineType[])
           return;
         }
         
-        // Draw original image
-        ctx.drawImage(img, 0, 0);
-        
-        // If there are lines, apply effect to masked area
-        if (lines.length > 0) {
-            // Create a temporary canvas for mask
-            const maskCanvas = document.createElement("canvas");
-            maskCanvas.width = canvas.width;
-            maskCanvas.height = canvas.height;
-            const maskCtx = maskCanvas.getContext("2d");
-            
-            if (maskCtx) {
-                // Draw lines on mask canvas
-                maskCtx.lineCap = 'round';
-                maskCtx.lineJoin = 'round';
-                
-                lines.forEach(line => {
-                    if (line.tool === 'pen') {
-                        maskCtx.strokeStyle = 'white'; // Use white for mask
-                        maskCtx.lineWidth = line.strokeWidth;
-                        maskCtx.beginPath();
-                        maskCtx.moveTo(line.points[0], line.points[1]);
-                        for (let i = 2; i < line.points.length; i += 2) {
-                            maskCtx.lineTo(line.points[i], line.points[i + 1]);
-                        }
-                        maskCtx.stroke();
+        // Build a mask image based on the drawn lines
+        const maskCanvas = document.createElement("canvas");
+        maskCanvas.width = canvas.width;
+        maskCanvas.height = canvas.height;
+        const maskCtx = maskCanvas.getContext("2d");
+        let maskData: Uint8ClampedArray | null = null;
+
+        if (maskCtx) {
+            maskCtx.lineCap = 'round';
+            maskCtx.lineJoin = 'round';
+
+            lines.forEach(line => {
+                if (line.tool === 'pen') {
+                    maskCtx.strokeStyle = 'white';
+                    maskCtx.lineWidth = line.strokeWidth;
+                    maskCtx.beginPath();
+                    maskCtx.moveTo(line.points[0], line.points[1]);
+                    for (let i = 2; i < line.points.length; i += 2) {
+                        maskCtx.lineTo(line.points[i], line.points[i + 1]);
                     }
-                    else if (line.tool === 'eraser') {
-                        maskCtx.globalCompositeOperation = 'destination-out';
-                        maskCtx.lineWidth = line.strokeWidth;
-                        maskCtx.beginPath();
-                        maskCtx.moveTo(line.points[0], line.points[1]);
-                        for (let i = 2; i < line.points.length; i += 2) {
-                            maskCtx.lineTo(line.points[i], line.points[i + 1]);
-                        }
-                        maskCtx.stroke();
-                        maskCtx.globalCompositeOperation = 'source-over';
+                    maskCtx.stroke();
+                } else if (line.tool === 'eraser') {
+                    maskCtx.globalCompositeOperation = 'destination-out';
+                    maskCtx.lineWidth = line.strokeWidth;
+                    maskCtx.beginPath();
+                    maskCtx.moveTo(line.points[0], line.points[1]);
+                    for (let i = 2; i < line.points.length; i += 2) {
+                        maskCtx.lineTo(line.points[i], line.points[i + 1]);
                     }
-                });
-                
-                // Get mask data
-                const maskData = maskCtx.getImageData(0, 0, canvas.width, canvas.height).data;
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const data = imageData.data;
-                
-                // Apply filter where mask > 0
-                for (let i = 0; i < data.length; i += 4) {
-                    // Check alpha of mask (or just R since we drew white)
-                    if (maskData[i+3] > 0) { // If mask is not transparent
-                        const r = data[i];
-                        const g = data[i + 1];
-                        const b = data[i + 2];
-                        
-                        // Invert colors for strong visual feedback
-                        data[i] = 255 - r;
-                        data[i + 1] = 255 - g;
-                        data[i + 2] = 255 - b;
-                    }
+                    maskCtx.stroke();
+                    maskCtx.globalCompositeOperation = 'source-over';
                 }
-                
-                ctx.putImageData(imageData, 0, 0);
-            }
+            });
+
+            const maskImage = maskCtx.getImageData(0, 0, canvas.width, canvas.height);
+            maskData = maskImage.data;
         }
+
+        const imageData = ctx.createImageData(canvas.width, canvas.height);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+            const isLine = maskData ? maskData[i + 3] > 0 : false;
+            const color = isLine ? 255 : 0;
+            data[i] = color;
+            data[i + 1] = color;
+            data[i + 2] = color;
+            data[i + 3] = 255;
+        }
+
+        ctx.putImageData(imageData, 0, 0);
         
         const dataUrl = canvas.toDataURL("image/jpeg");
         resolve(dataUrl);

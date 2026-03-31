@@ -7,7 +7,7 @@ import {
   Image as ImageIcon, 
   Undo, 
   Redo, 
-  Download, 
+  /*Download,*/ 
   ZoomIn, 
   ZoomOut, 
   Move,
@@ -16,6 +16,8 @@ import {
 import type { KonvaEventObject } from 'konva/lib/Node';
 import type Konva from 'konva';
 import useImage from 'use-image';
+
+type KonvaPointerEvent = KonvaEventObject<MouseEvent | TouchEvent>;
 
 interface InpaintingEditorProps {
   prompt: string;
@@ -80,7 +82,7 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
   // Drawing State
   const isDrawing = useRef(false);
   const [tool, setTool] = useState<'pen' | 'eraser' | 'pan'>('pen');
-  const [brushSize, setBrushSize] = useState(20);
+  const [brushSize, setBrushSize] = useState(80);
 
   // History
   const history = useHistory([]);
@@ -133,9 +135,10 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
     }
   }, [image]);
 
-  const handleMouseDown = (e: KonvaEventObject<MouseEvent>) => {
+  const handleMouseDown = (e: KonvaPointerEvent) => {
     if (tool === 'pan') return;
     
+    e.evt.preventDefault();
     isDrawing.current = true;
     const stage = e.target.getStage();
     if (!stage) return;
@@ -148,11 +151,12 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
     onLinesChange([...lines, { tool: tool === 'eraser' ? 'eraser' : 'pen', points: [pos.x, pos.y], strokeWidth: brushSize }]);
   };
 
-  const handleMouseMove = (e: KonvaEventObject<MouseEvent>) => {
+  const handleMouseMove = (e: KonvaPointerEvent) => {
     if (!isDrawing.current || tool === 'pan') {
       return;
     }
-    
+
+    e.evt.preventDefault();
     const stage = e.target.getStage();
     if (!stage) return;
 
@@ -208,6 +212,7 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
     if (next) onLinesChange(next);
   };
 
+  /*
   const handleDownload = () => {
     if (!stageRef.current) return;
     
@@ -222,6 +227,7 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
     link.click();
     document.body.removeChild(link);
   };
+  */
   
   const handleZoomIn = () => {
      setScale(s => s * 1.2);
@@ -286,8 +292,8 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Size</span>
           <input
             type="range"
-            min="1"
-            max="100"
+            min="50"
+            max="200"
             value={brushSize}
             onChange={(e) => setBrushSize(parseInt(e.target.value))}
             className="w-24 h-1.5 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600"
@@ -315,6 +321,7 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
            <button onClick={handleResetView} className="p-2 text-gray-500 hover:bg-gray-100 rounded" title="Fit to Screen">
               <Maximize size={18} />
            </button>
+           {/*}
            <button 
              onClick={handleDownload}
              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm text-sm font-medium transition-colors"
@@ -322,6 +329,7 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
              <Download size={16} />
              Save Image
            </button>
+           */}
         </div>
       </div>
 
@@ -329,7 +337,7 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
       <div className="relative flex-1 min-h-[400px] border border-gray-200 rounded-xl bg-gray-100 overflow-hidden shadow-inner group">
         <div className="absolute inset-0 bg-[url('https://t3.ftcdn.net/jpg/04/54/01/53/360_F_454015329_4279P55e5b565756.jpg')] opacity-5 pointer-events-none bg-repeat"></div> {/* Checkered background pattern optional */}
         
-        <div ref={containerRef} className="absolute inset-0 w-full h-full">
+        <div ref={containerRef} className="absolute inset-0 w-full h-full touch-none">
             {!imageUrl && !image && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 pointer-events-none">
                     <ImageIcon size={64} className="mb-2 opacity-20" />
@@ -344,6 +352,10 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
+              onTouchStart={handleMouseDown}
+              onTouchMove={handleMouseMove}
+              onTouchEnd={handleMouseUp}
+              onTouchCancel={handleMouseUp}
               onWheel={handleWheel}
               draggable={tool === 'pan'}
               onDragEnd={(e) => {
