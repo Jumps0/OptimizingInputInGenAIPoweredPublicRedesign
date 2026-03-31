@@ -13,7 +13,16 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     try {
-      const { prompt, encoded_image, model = 'flux-2-klein-9b', api_key } = req.body;
+      const {
+        prompt,
+        encoded_image,
+        encoded_mask,
+        model = 'flux-2-klein-9b',
+        steps,
+        guidance,
+        output_format,
+        api_key,
+      } = req.body;
       const key = process.env.BFL_API_KEY;// || api_key;
 
       if (!key) {
@@ -25,6 +34,24 @@ export default async function handler(req, res) {
       }
 
       const endpoint = `https://api.bfl.ai/v1/${model}`;
+      const requestBody = {
+        prompt,
+        input_image: encoded_image,
+      };
+
+      if (encoded_mask) {
+        requestBody.input_mask = encoded_mask;
+      }
+      if (steps !== undefined) {
+        requestBody.steps = steps;
+      }
+      if (guidance !== undefined) {
+        requestBody.guidance = guidance;
+      }
+      if (output_format) {
+        requestBody.output_format = output_format;
+      }
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -32,7 +59,7 @@ export default async function handler(req, res) {
           'x-key': key,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt, input_image: encoded_image }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
