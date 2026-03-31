@@ -155,6 +155,59 @@ export const applyInpaintingFilter = async (imageUrl: string, lines: LineType[])
   });
 };
 
+export const applyDragDropMask = async (imageUrl: string, elements: DroppedElement[]): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    if (!imageUrl.startsWith('data:') && !imageUrl.startsWith('blob:')) {
+      img.crossOrigin = "Anonymous";
+    }
+
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          reject(new Error("Could not get canvas context"));
+          return;
+        }
+
+        // Fill black background
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const circleRadius = canvas.height * 0.05; // 10% of height = diameter, so radius is 5%. If this doesn't work we can swap to a fixed pixel size.
+
+        elements.forEach((element) => {
+          const x = (element.x / 100) * canvas.width;
+          const y = (element.y / 100) * canvas.height;
+
+          ctx.beginPath();
+          ctx.arc(x, y, circleRadius, 0, Math.PI * 2);
+          ctx.fillStyle = 'white';
+          ctx.fill();
+        });
+
+        const dataUrl = canvas.toDataURL("image/png");
+        const base64 = dataUrl.split(',')[1] || '';
+        resolve(base64);
+      } catch (err) {
+        console.error("Error creating drag drop mask:", err);
+        reject(err);
+      }
+    };
+
+    img.onerror = (err) => {
+      console.error("Error loading image for drag drop mask:", err);
+      reject(new Error("Failed to load image"));
+    };
+
+    img.src = imageUrl;
+  });
+};
+
 export const applyDragDropFilter = async (imageUrl: string, elements: DroppedElement[]): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();

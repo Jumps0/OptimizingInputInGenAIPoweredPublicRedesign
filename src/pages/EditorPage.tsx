@@ -9,7 +9,7 @@ import type { DroppedElement } from "@/components/Editor/DragDropEditor";
 import {  Sparkles, RotateCcw, /*Check, MessageSquareText, X*/ } from "lucide-react";
 import ComparisonSlider from "@/components/ComparisonSlider";
 import { METHODS } from "@/utils/constants";
-import { /*applySepiaFilter, */applyInpaintingFilter, /*applyDragDropFilter*/ } from "@/utils/imageUtils";
+import { /*applySepiaFilter, */applyInpaintingFilter, applyDragDropMask/*,applyDragDropFilter*/ } from "@/utils/imageUtils";
 
 // import SuggestionGallery from "@/components/SuggestionGallery";
 import {
@@ -465,17 +465,46 @@ const EditorPage = () => {
         }
         else if(activeTool === "dragdrop"){
           console.log("...to perform drag & drop.");
-          // The most complex (and annoying one). Uses inpainting in phases. This requires:
-          // - inputPrompt (string)
-          // - baseImage (the image to modify)
-          // - inpaintingLines (array of {x1, y1, x2, y2} objects representing the lines drawn by the user). Gonna need to parse this into a black & white image
+          // The most complex (and annoying one). Uses inpainting in phases.
+          if (_placedElements.length === 0) {
+            console.warn('No placed elements for dragdrop generation');
+            return null;
+          }
 
-          // This will call run_inpainting
-          
-          // Convert the lines to an actual mask. Remember: BLACK = NO CHANGE | WHITE = CHANGE
+          let currentImageUrl = previewUrl;
+          let currentEncodedImage = encodedImage;
+          let outputUrl: string | null = null;
 
-          // TODO
-          return null;
+          for (let i = 0; i < _placedElements.length; i += 1) {
+            const element = _placedElements[i];
+            console.log(`Processing sticker ${i + 1}/${_placedElements.length}:`, element);
+
+            const mask = await applyDragDropMask(currentImageUrl, [element]);
+            const inpaintResult = await bflInpainting(inputPrompt, currentEncodedImage, mask);
+
+            const requestId = inpaintResult?.id;
+            const pollingUrl = inpaintResult?.polling_url;
+
+            if (!requestId) {
+              console.error('No generation ID returned from BFL proxy:', inpaintResult);
+              return null;
+            }
+
+            const pollResult = await pollBflGeneration(String(requestId), pollingUrl);
+            outputUrl = pollResult?.result?.sample || pollResult?.sample;
+
+            if (!outputUrl) {
+              console.error('BFL proxy returned no output URL:', pollResult);
+              return null;
+            }
+
+            console.log(`Sticker ${i + 1} applied.`);
+            currentImageUrl = outputUrl;
+            currentEncodedImage = await fetchImageAsBase64(currentImageUrl);
+          }
+
+          console.log('Drag & drop generation successful.');
+          return outputUrl;
         }
         else{
           return null;
