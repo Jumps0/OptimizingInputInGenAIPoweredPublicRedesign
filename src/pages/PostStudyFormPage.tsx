@@ -3,20 +3,53 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context";
 import { savePostStudyResponse } from "@/utils";
 
+type YesNoOption = "Yes" | "No";
+
+type RatingOption = "1" | "2" | "3" | "4" | "5";
+
+interface PostStudyResponses extends Record<string, string> {
+  awareOfAI: YesNoOption | "";
+  usedAI: YesNoOption | "";
+  easyToUse: RatingOption | "";
+  matchedExpectation: RatingOption | "";
+  feltControl: RatingOption | "";
+  understoodIntention: RatingOption | "";
+  creativeResults: RatingOption | "";
+  overallSatisfaction: RatingOption | "";
+}
+
+const yesNoOptions: YesNoOption[] = ["Yes", "No"];
+const ratingOptions: RatingOption[] = ["1", "2", "3", "4", "5"];
+
+const methodLabels: Record<string, string> = {
+  text: "text",
+  voice: "voice",
+  inpainting: "inpainting",
+  dragdrop: "drag-and-drop",
+};
+
 const PostStudyFormPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [responses, setResponses] = useState({
-    q1: "",
-    q2: "",
-    q3: "",
+  const assignedMethodLabel = user ? methodLabels[user.assignedMethod] ?? user.assignedMethod : "assigned";
+  const [responses, setResponses] = useState<PostStudyResponses>({
+    awareOfAI: "",
+    usedAI: "",
+    easyToUse: "",
+    matchedExpectation: "",
+    feltControl: "",
+    understoodIntention: "",
+    creativeResults: "",
+    overallSatisfaction: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const hasAnsweredEveryQuestion = Object.values(responses).every((value) => value !== "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
     setIsSubmitting(true);
     savePostStudyResponse(user.id, responses);
     setIsSubmitting(false);
@@ -25,15 +58,15 @@ const PostStudyFormPage = () => {
 
   return (
     <div className="min-h-screen bg-white px-4 py-6 md:py-10">
-      <div className="max-w-xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         <h1 className="text-2xl font-semibold text-gray-900">Post-Study Form</h1>
-        <p className="text-sm text-gray-500 mt-2">
-          This page is accessible from the Gallery floating button only.
+        <p className="text-sm text-blue-700 mt-2">
+          Please answer the following questions about your experience and then hit <span className="font-medium font-semibold text-blue-700">'Submit Responses'</span> to finish the study.
         </p>
 
         {submitted ? (
           <div className="mt-6 p-4 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800">
-            Response saved successfully.
+            Response saved successfully. Thank you for participating in our study! You can now close this page.
             <button
               onClick={() => navigate("/gallery")}
               className="block mt-3 text-sm font-medium text-emerald-700 underline"
@@ -42,29 +75,105 @@ const PostStudyFormPage = () => {
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <textarea
-              value={responses.q1}
-              onChange={(e) => setResponses((prev) => ({ ...prev, q1: e.target.value }))}
-              className="w-full p-3 rounded-lg border border-gray-300"
-              placeholder="Question 1 response (placeholder)"
-            />
-            <textarea
-              value={responses.q2}
-              onChange={(e) => setResponses((prev) => ({ ...prev, q2: e.target.value }))}
-              className="w-full p-3 rounded-lg border border-gray-300"
-              placeholder="Question 2 response (placeholder)"
-            />
-            <textarea
-              value={responses.q3}
-              onChange={(e) => setResponses((prev) => ({ ...prev, q3: e.target.value }))}
-              className="w-full p-3 rounded-lg border border-gray-300"
-              placeholder="Question 3 response (placeholder)"
-            />
+          <form onSubmit={handleSubmit} className="mt-6 space-y-8">
+            <section className="space-y-4">
+              <h2 className="text-lg font-semibold text-gray-900">Prior Experience</h2>
+              <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <fieldset>
+                  <legend className="text-sm font-medium text-gray-800">
+                    Before this study, were you aware of AI image editing technology?
+                  </legend>
+                  <div className="mt-3 flex gap-4">
+                    {yesNoOptions.map((option) => (
+                      <label key={option} className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="radio"
+                          name="awareOfAI"
+                          value={option}
+                          checked={responses.awareOfAI === option}
+                          onChange={(e) =>
+                            setResponses((prev) => ({ ...prev, awareOfAI: e.target.value as YesNoOption }))
+                          }
+                          className="h-4 w-4 border-gray-300 text-gray-900 focus:ring-gray-500"
+                        />
+                        {option}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                <fieldset>
+                  <legend className="text-sm font-medium text-gray-800">
+                    Before this study, have you ever used AI to edit an image?
+                  </legend>
+                  <div className="mt-3 flex gap-4">
+                    {yesNoOptions.map((option) => (
+                      <label key={option} className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="radio"
+                          name="usedAI"
+                          value={option}
+                          checked={responses.usedAI === option}
+                          onChange={(e) =>
+                            setResponses((prev) => ({ ...prev, usedAI: e.target.value as YesNoOption }))
+                          }
+                          className="h-4 w-4 border-gray-300 text-gray-900 focus:ring-gray-500"
+                        />
+                        {option}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-lg font-semibold text-gray-900">User Satisfaction</h2>
+              <p className="text-sm text-blue-700">
+                Please <span className="font-medium font-semibold text-blue-700">rate your agreement</span> with the following statements (1 = Strongly Disagree, 5 = Strongly Agree)
+              </p>
+
+              {[
+                { key: "easyToUse", label: "The input method was easy to use" },
+                { key: "matchedExpectation", label: "The final image matched what I asked for." },
+                { key: "feltControl", label: "I felt in control of what the AI generated." },
+                { key: "understoodIntention", label: "I am confident that the AI understood my intention." },
+                { key: "creativeResults", label: "The AI generated creative and varied results" },
+                {
+                  key: "overallSatisfaction",
+                  label: `Overall, I was satisfied with my experience using the ${assignedMethodLabel} input method.`,
+                },
+              ].map((question) => (
+                <fieldset key={question.key} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <legend className="text-sm font-medium text-gray-800">{question.label}</legend>
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    {ratingOptions.map((option) => (
+                      <label key={option} className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="radio"
+                          name={question.key}
+                          value={option}
+                          checked={responses[question.key as keyof PostStudyResponses] === option}
+                          onChange={(e) =>
+                            setResponses((prev) => ({
+                              ...prev,
+                              [question.key]: e.target.value,
+                            }))
+                          }
+                          className="h-4 w-4 border-gray-300 text-gray-900 focus:ring-gray-500"
+                        />
+                        {option}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              ))}
+            </section>
+
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full py-3 rounded-lg bg-gray-900 text-white font-medium hover:bg-black disabled:opacity-70"
+              disabled={isSubmitting || !hasAnsweredEveryQuestion}
+              className="w-full py-3 rounded-lg bg-green-700 text-white font-medium hover:bg-green-900 disabled:opacity-70"
             >
               {isSubmitting ? "Saving..." : "Submit Responses"}
             </button>
