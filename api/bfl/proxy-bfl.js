@@ -42,6 +42,7 @@ export default async function handler(req, res) {
 
       if (encoded_mask) {
         requestBody.input_mask = encoded_mask;
+        requestBody.mask = encoded_mask;
       }
       if (steps !== undefined) {
         requestBody.steps = steps;
