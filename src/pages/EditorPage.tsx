@@ -36,7 +36,6 @@ const EditorPage = () => {
   );
 
   const [prompt, setPrompt] = useState("");
-  const [generatedResult, setGeneratedResult] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [resultImage, setResultImage] = useState<string | null>(null);
 
@@ -114,6 +113,7 @@ const EditorPage = () => {
         model: 'flux-2-klein-9b',
       }),
     });
+    console.log("Sent request for image-to-image...");
 
     const data = await response.json();
     if (!response.ok) {
@@ -168,6 +168,7 @@ const EditorPage = () => {
 
       const status = String(data?.status || '').toLowerCase();
       if (status === 'ready') {
+        console.log('Data ready!');
         return data;
       }
 
@@ -359,12 +360,12 @@ const EditorPage = () => {
   */
 
   const handleGenerate = async () => {
-    console.log("GENERATING IMAGE");
+    console.log("Starting process...");
     setIsGenerating(true);
 
     // Initialize Pyodide and load the script
     const callImageGeneration = async (inputPrompt: string, previewUrl: string, _inpaintingLines: any[], _placedElements: any[]): Promise<string | null> => {
-      console.log("...running generation logic...");
+      console.log("...and running generation logic...");
 
       //return await applySepiaFilter(previewUrl); // TEMP
       try {
@@ -380,7 +381,26 @@ const EditorPage = () => {
           // - inputPrompt (string)
           // - baseImage (the image to modify)
 
-          setGeneratedResult(await bflImage2Image(inputPrompt, encodedImage));
+          const textResult = await bflImage2Image(inputPrompt, encodedImage);
+
+          const requestId = textResult?.id;
+          const pollingUrl = textResult?.polling_url;
+
+          if (!requestId) {
+            console.error('No generation ID returned from BFL proxy:', textResult);
+            return null;
+          }
+
+          const pollResult = await pollBflGeneration(String(requestId), pollingUrl);
+          const outputUrl = pollResult?.result?.sample || pollResult?.sample;
+
+          if (!outputUrl) {
+            console.error('BFL proxy returned no output URL:', pollResult);
+            return null;
+          }
+
+          console.log('Generation successful.');
+          return outputUrl;
         }
         else if(activeTool === "voice"){
           console.log("...to perform voice-to-image. Prompt:", inputPrompt);
@@ -388,7 +408,26 @@ const EditorPage = () => {
           // - inputPrompt (string)
           // - baseImage (the image to modify)
 
-          setGeneratedResult(await bflImage2Image(inputPrompt, encodedImage));
+          const audioResult = await bflImage2Image(inputPrompt, encodedImage);
+
+          const requestId = audioResult?.id;
+          const pollingUrl = audioResult?.polling_url;
+
+          if (!requestId) {
+            console.error('No generation ID returned from BFL proxy:', audioResult);
+            return null;
+          }
+
+          const pollResult = await pollBflGeneration(String(requestId), pollingUrl);
+          const outputUrl = pollResult?.result?.sample || pollResult?.sample;
+
+          if (!outputUrl) {
+            console.error('BFL proxy returned no output URL:', pollResult);
+            return null;
+          }
+
+          console.log('Generation successful.');
+          return outputUrl;
         }
         else if(activeTool === "inpainting"){
           console.log("...to perform inpainting. Prompt:", inputPrompt);
@@ -402,7 +441,7 @@ const EditorPage = () => {
           // Convert the lines to an actual mask. Remember: BLACK = NO CHANGE | WHITE = CHANGE
 
           // TODO
-
+          return null;
         }
         else if(activeTool === "dragdrop"){
           console.log("...to perform drag & drop.");
@@ -416,26 +455,11 @@ const EditorPage = () => {
           // Convert the lines to an actual mask. Remember: BLACK = NO CHANGE | WHITE = CHANGE
 
           // TODO
-        }
-
-        const requestId = generatedResult?.id;
-        const pollingUrl = generatedResult?.polling_url;
-
-        if (!requestId) {
-          console.error('No generation ID returned from BFL proxy:', generatedResult);
           return null;
         }
-
-        const pollResult = await pollBflGeneration(String(requestId), pollingUrl);
-        const outputUrl = pollResult?.result?.sample || pollResult?.sample;
-
-        if (!outputUrl) {
-          console.error('BFL proxy returned no output URL:', pollResult);
+        else{
           return null;
         }
-
-        console.log('Generation successful.');
-        return outputUrl;
       } catch (error) {
         console.error('Error calling backend proxy:', error);
         return null;
