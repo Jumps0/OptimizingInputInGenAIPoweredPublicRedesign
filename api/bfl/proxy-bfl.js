@@ -52,6 +52,11 @@ export default async function handler(req, res) {
         requestBody.output_format = output_format;
       }
 
+      console.log(">Sending request with the following data:");
+      console.log(">Prompt:", prompt);
+      console.log(">Model:", model);
+      console.log(">Mask? ", !!encoded_mask);
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
