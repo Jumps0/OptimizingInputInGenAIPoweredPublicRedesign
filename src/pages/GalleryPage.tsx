@@ -109,8 +109,8 @@ const GalleryPage = () => {
         </div>
       )}
 
-      <div className="fixed bottom-5 right-4 md:bottom-6 md:right-6 flex items-center gap-3">
-        <p className="text-xs md:text-sm font-semibold text-blue-700 leading-tight max-w-[170px]">
+      <div className="fixed bottom-22 right-4 md:bottom-6 md:right-6 flex items-center gap-3">
+        <p className="text-xs md:text-sm font-semibold text-blue-700 leading-tight max-w-[170px] bg-white px-2 py-1 rounded-xl shadow-sm border border-gray-200">
           Complete post-study form to finish
         </p>
         <div className="relative">
