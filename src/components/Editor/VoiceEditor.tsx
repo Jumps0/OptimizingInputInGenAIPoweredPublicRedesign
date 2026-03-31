@@ -37,6 +37,7 @@ interface SpeechRecognitionAlternative {
 interface SpeechRecognition extends EventTarget {
   continuous: boolean;
   interimResults: boolean;
+  maxAlternatives: number;
   lang: string;
   start: () => void;
   stop: () => void;
@@ -60,57 +61,91 @@ const VoiceEditor = ({ prompt, onPromptChange }: VoiceEditorProps) => {
     return null;
   });
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const promptRef = useRef(prompt);
+  const isRecordingRef = useRef(isRecording);
 
-  useEffect(() => { 
+  useEffect(() => {
+    promptRef.current = prompt;
+  }, [prompt]);
+
+  useEffect(() => {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = (window as unknown as WindowWithSpeech).SpeechRecognition || (window as unknown as WindowWithSpeech).webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      if (recognitionRef.current) {
-        recognitionRef.current.continuous = true;
-        recognitionRef.current.interimResults = true;
-        recognitionRef.current.lang = 'en-US';
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
 
-        recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-          let finalTranscript = '';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      recognition.lang = 'en-US';
 
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-              finalTranscript += event.results[i][0].transcript;
-            }
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
           }
-          
-          if (finalTranscript) {
-              onPromptChange(prompt ? `${prompt} ${finalTranscript}` : finalTranscript);
-          }
-        };
-
-        recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
-          console.error('Speech recognition error', event.error);
-          setError(`Error: ${event.error}`);
-          setIsRecording(false);
-        };
-        
-        recognitionRef.current.onend = () => {
-            setIsRecording(false);
-        };
-      }
-    }
-    
-    return () => {
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
         }
+
+        if (finalTranscript) {
+          const basePrompt = promptRef.current || '';
+          const newPrompt = basePrompt ? `${basePrompt} ${finalTranscript}` : finalTranscript;
+          promptRef.current = newPrompt;
+          onPromptChange(newPrompt);
+        }
+      };
+
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+        console.error('Speech recognition error', event.error);
+        setError(`Error: ${event.error}`);
+        setIsRecording(false);
+      };
+
+      recognition.onend = () => {
+        if (isRecordingRef.current) {
+          try {
+            recognition.start();
+          } catch (err) {
+            console.warn('Failed to restart recognition after pause', err);
+            setIsRecording(false);
+          }
+        } else {
+          setIsRecording(false);
+        }
+      };
+    }
+
+    return () => {
+      recognitionRef.current?.stop();
     };
-  }, [prompt, onPromptChange]);
+  }, []);
 
   const toggleRecording = () => {
     if (isRecording) {
       recognitionRef.current?.stop();
       setIsRecording(false);
+      isRecordingRef.current = false;
     } else {
       setError(null);
-      recognitionRef.current?.start();
-      setIsRecording(true);
+      if (!recognitionRef.current) {
+        setError('Speech recognition is unavailable.');
+        return;
+      }
+      try {
+        recognitionRef.current.start();
+        setIsRecording(true);
+        isRecordingRef.current = true;
+      } catch (err) {
+        console.error('Speech recognition start error', err);
+        setError('Unable to start voice recognition.');
+      }
     }
   };
   
@@ -136,7 +171,7 @@ const VoiceEditor = ({ prompt, onPromptChange }: VoiceEditorProps) => {
 
       <div className="text-center space-y-2">
         <h3 className="text-lg font-medium text-gray-900">
-          {isRecording ? 'Listening...' : 'Tap microphone to speak'}
+          {isRecording ? 'Listening... \n Tap to stop' : 'Tap microphone to speak'}
         </h3>
         <p className="text-sm text-gray-500 max-w-xs mx-auto">
           {isRecording 
@@ -173,7 +208,7 @@ const VoiceEditor = ({ prompt, onPromptChange }: VoiceEditorProps) => {
       {!error && (
          <div className="flex items-start gap-2 bg-blue-50 p-3 rounded-md border border-blue-100 text-sm text-blue-800 w-full">
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
-            <p>Voice commands are enabled. Try saying "Add trees" or "Remove cars".</p>
+            <p>Voice commands are enabled. Try saying "Add some trees" or "Remove the cars".</p>
          </div>
       )}
     </div>
