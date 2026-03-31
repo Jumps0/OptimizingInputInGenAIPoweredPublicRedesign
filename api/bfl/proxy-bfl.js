@@ -40,7 +40,7 @@ export default async function handler(req, res) {
       };
 
       if (encoded_mask) {
-        requestBody.input_mask = encoded_mask;
+        requestBody.mask = encoded_mask;
       }
       if (steps !== undefined) {
         requestBody.steps = steps;
@@ -51,11 +51,6 @@ export default async function handler(req, res) {
       if (output_format) {
         requestBody.output_format = output_format;
       }
-
-      console.log(">Sending request with the following data:");
-      console.log(">Prompt:", prompt);
-      console.log(">Model:", model);
-      console.log(">Mask? ", !!encoded_mask);
 
       const response = await fetch(endpoint, {
         method: 'POST',
