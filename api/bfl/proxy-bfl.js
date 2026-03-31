@@ -36,7 +36,7 @@ export default async function handler(req, res) {
       const endpoint = `https://api.bfl.ai/v1/${model}`;
       const requestBody = {
         prompt,
-        input_image: encoded_image,
+        image: encoded_image,
       };
 
       if (encoded_mask) {
