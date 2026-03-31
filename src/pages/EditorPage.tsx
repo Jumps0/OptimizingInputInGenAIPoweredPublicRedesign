@@ -156,7 +156,8 @@ const EditorPage = () => {
       params.set('polling_url', String(pollingUrl));
     }
 
-    const maxAttempts = 30;
+    // Image2Image takes ~11. Inpainting takes more than 20.
+    const maxAttempts = 60;
     let attempt = 0;
 
     while (attempt < maxAttempts) {
