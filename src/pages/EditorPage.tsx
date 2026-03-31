@@ -122,8 +122,8 @@ const EditorPage = () => {
     return data;
   };
 
-  /*
-  const bflInpainting = async (prompt: string, encodedImage: string, _inpaintingLines: any[]) => {
+  
+  const bflInpainting = async (prompt: string, encodedImage: string, encoded_mask: string) => {
     const response = await fetch('/api/bfl/proxy-bfl', {
       method: 'POST',
       headers: {
@@ -146,7 +146,7 @@ const EditorPage = () => {
     }
     return data;
   };
-  */
+  
 
   const pollBflGeneration = async (id: string, pollingUrl?: string) => {
     const params = new URLSearchParams();
@@ -436,13 +436,31 @@ const EditorPage = () => {
           // - inputPrompt (string)
           // - baseImage (the image to modify)
           // - inpaintingLines (array of {x1, y1, x2, y2} objects representing the lines drawn by the user). Gonna need to parse this into a black & white image
-
-          // This will call run_inpainting
           
           // Convert the lines to an actual mask. Remember: BLACK = NO CHANGE | WHITE = CHANGE
+          const mask = await applyInpaintingFilter(previewUrl, inpaintingLines);
 
-          // TODO
-          return await applyInpaintingFilter(previewUrl, inpaintingLines);;
+          // Generate!
+          const inpaintResult = await bflInpainting(inputPrompt, encodedImage, mask);
+
+          const requestId = inpaintResult?.id;
+          const pollingUrl = inpaintResult?.polling_url;
+
+          if (!requestId) {
+            console.error('No generation ID returned from BFL proxy:', inpaintResult);
+            return null;
+          }
+
+          const pollResult = await pollBflGeneration(String(requestId), pollingUrl);
+          const outputUrl = pollResult?.result?.sample || pollResult?.sample;
+
+          if (!outputUrl) {
+            console.error('BFL proxy returned no output URL:', pollResult);
+            return null;
+          }
+
+          console.log('Generation successful.');
+          return outputUrl;
         }
         else if(activeTool === "dragdrop"){
           console.log("...to perform drag & drop.");
