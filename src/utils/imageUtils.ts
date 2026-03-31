@@ -137,9 +137,9 @@ export const applyInpaintingFilter = async (imageUrl: string, lines: LineType[])
 
         ctx.putImageData(imageData, 0, 0);
         
-        const dataUrl = canvas.toDataURL("image/png");
-        const base64 = dataUrl.split(',')[1] || '';
-        resolve(base64);
+        const dataUrl = canvas.toDataURL("image/jpg");
+        //const base64 = dataUrl.split(',')[1] || '';
+        resolve (dataUrl);//resolve(base64);
       } catch (err) {
         console.error("Error processing inpainting:", err);
         reject(err);
