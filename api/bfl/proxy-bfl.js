@@ -17,6 +17,10 @@ export default async function handler(req, res) {
         prompt,
         encoded_image,
         encoded_mask,
+        image,
+        input_image,
+        input_mask,
+        mask,
         model = 'flux-2-klein-9b',
         steps,
         guidance,
@@ -29,20 +33,22 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing BFL API key. Set BFL_API_KEY on the server or pass api_key in the request body.' });
       }
 
-      if (!prompt || !encoded_image) {
-        return res.status(400).json({ error: 'Missing prompt or encoded_image in request body.' });
+      const imageData = encoded_image || image || input_image;
+      if (!prompt || !imageData) {
+        return res.status(400).json({ error: 'Missing prompt or image data in request body.' });
       }
 
       const endpoint = `https://api.bfl.ai/v1/${model}`;
       const requestBody = {
         prompt,
-        image: encoded_image,
-        input_image: encoded_image,
+        image: imageData,
+        input_image: imageData,
       };
 
-      if (encoded_mask) {
-        requestBody.input_mask = encoded_mask;
-        requestBody.mask = encoded_mask;
+      const maskData = encoded_mask || mask || input_mask;
+      if (maskData) {
+        requestBody.mask = maskData;
+        requestBody.input_mask = maskData;
       }
       if (steps !== undefined) {
         requestBody.steps = steps;

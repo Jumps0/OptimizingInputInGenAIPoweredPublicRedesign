@@ -137,7 +137,7 @@ export const applyInpaintingFilter = async (imageUrl: string, lines: LineType[])
 
         ctx.putImageData(imageData, 0, 0);
         
-        const dataUrl = canvas.toDataURL("image/jpg");
+        const dataUrl = canvas.toDataURL("image/png");
         const base64 = dataUrl.split(',')[1] || '';
         resolve(base64);
       } catch (err) {

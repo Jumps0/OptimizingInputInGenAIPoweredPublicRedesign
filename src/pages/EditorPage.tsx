@@ -132,8 +132,8 @@ const EditorPage = () => {
       body: JSON.stringify({
         prompt,
         encoded_image: encodedImage,
+        encoded_mask,
         model: 'flux-pro-1.0-fill',
-        input_mask: encoded_mask,
         steps: 50,
         guidance: 30,
         output_format: 'jpeg',
