@@ -109,13 +109,24 @@ const GalleryPage = () => {
         </div>
       )}
 
-      <button
-        onClick={() => navigate("/post-study-form")}
-        className="fixed bottom-5 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-full bg-gray-900 text-white shadow-xl flex items-center justify-center hover:bg-black transition-colors"
-        aria-label="Open post-study form"
-      >
-        <ClipboardList size={22} />
-      </button>
+      <div className="fixed bottom-5 right-4 md:bottom-6 md:right-6 flex items-center gap-3">
+        <p className="text-xs md:text-sm font-semibold text-blue-700 leading-tight max-w-[170px]">
+          Complete post-study form to finish
+        </p>
+        <div className="relative">
+          <span
+            className="absolute -inset-2 rounded-full border border-emerald-500 opacity-60 animate-pulse -z-10"
+            style={{ animationDuration: "2s" }}
+          />
+          <button
+            onClick={() => navigate("/post-study-form")}
+            className="relative w-14 h-14 rounded-full bg-gray-900 text-white shadow-xl flex items-center justify-center hover:bg-black transition-colors"
+            aria-label="Open post-study form"
+          >
+            <ClipboardList size={22} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
