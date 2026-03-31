@@ -105,6 +105,14 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
   // Fit image to stage when loaded
   const lastFittedImageRef = useRef<HTMLImageElement | undefined>(undefined);
 
+  const clampPointToImage = (point: { x: number; y: number }) => {
+    if (!image) return point;
+    return {
+      x: Math.max(0, Math.min(image.width, point.x)),
+      y: Math.max(0, Math.min(image.height, point.y)),
+    };
+  };
+
   useEffect(() => {
     if (image && containerRef.current && image !== lastFittedImageRef.current) {
       const width = containerRef.current.offsetWidth;
@@ -144,11 +152,16 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
     if (!stage) return;
     
     // Get pointer position relative to the image/layer transform
+    const pointerPos = stage.getPointerPosition();
+    if (!pointerPos) return;
+
     const transform = stage.getAbsoluteTransform().copy();
     transform.invert();
-    const pos = transform.point(stage.getPointerPosition() || { x: 0, y: 0 });
-    
-    onLinesChange([...lines, { tool: tool === 'eraser' ? 'eraser' : 'pen', points: [pos.x, pos.y], strokeWidth: brushSize }]);
+    const pos = transform.point(pointerPos);
+    if (image && (pos.x < 0 || pos.x > image.width || pos.y < 0 || pos.y > image.height)) return;
+
+    const clampedPos = clampPointToImage(pos);
+    onLinesChange([...lines, { tool: tool === 'eraser' ? 'eraser' : 'pen', points: [clampedPos.x, clampedPos.y], strokeWidth: brushSize }]);
   };
 
   const handleMouseMove = (e: KonvaPointerEvent) => {
@@ -160,9 +173,12 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
     const stage = e.target.getStage();
     if (!stage) return;
 
+    const pointerPos = stage.getPointerPosition();
+    if (!pointerPos) return;
+
     const transform = stage.getAbsoluteTransform().copy();
     transform.invert();
-    const point = transform.point(stage.getPointerPosition() || { x: 0, y: 0 });
+    const point = clampPointToImage(transform.point(pointerPos));
     
     const newLines = [...lines];
     const lastLine = { ...newLines[newLines.length - 1] };
@@ -376,7 +392,7 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
                   />
                 )}
               </Layer>
-              <Layer>
+              <Layer opacity={0.8}>
                 {/* Drawing Layer */}
                 {lines.map((line, i) => (
                   <Line
@@ -390,7 +406,7 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
                     globalCompositeOperation={
                       line.tool === 'eraser' ? 'destination-out' : 'source-over'
                     }
-                    opacity={0.8}
+                    opacity={1}
                   />
                 ))}
               </Layer>
