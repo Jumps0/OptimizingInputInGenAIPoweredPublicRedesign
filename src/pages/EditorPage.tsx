@@ -131,14 +131,15 @@ const EditorPage = () => {
       },
       body: JSON.stringify({
         prompt,
-        encoded_image: encodedImage,
+        image: encodedImage,
         model: 'flux-pro-1.0-fill',
-        "mask": encoded_mask,
-        "steps": 50,
-        "guidance": 30,
-        "output_format": 'jpeg',
+        mask: encoded_mask,
+        steps: 50,
+        guidance: 30,
+        output_format: 'jpeg',
       }),
     });
+    console.log("Sent request for inpainting...");
 
     const data = await response.json();
     if (!response.ok) {
