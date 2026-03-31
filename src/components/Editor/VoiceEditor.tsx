@@ -134,6 +134,8 @@ const VoiceEditor = ({ prompt, onPromptChange }: VoiceEditorProps) => {
       isRecordingRef.current = false;
     } else {
       setError(null);
+      onPromptChange('');
+      promptRef.current = '';
       if (!recognitionRef.current) {
         setError('Speech recognition is unavailable.');
         return;
