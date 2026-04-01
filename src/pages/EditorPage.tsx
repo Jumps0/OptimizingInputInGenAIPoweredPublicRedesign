@@ -308,6 +308,7 @@ const EditorPage = () => {
           }
 
           console.log('Generation successful.');
+          setResultImage(outputUrl);
           return outputUrl;
         }
         else if(activeTool === "voice"){
@@ -335,6 +336,7 @@ const EditorPage = () => {
           }
 
           console.log('Generation successful.');
+          setResultImage(outputUrl);
           return outputUrl;
         }
         else if(activeTool === "inpainting"){
@@ -367,6 +369,7 @@ const EditorPage = () => {
           }
 
           console.log('Generation successful.');
+          setResultImage(outputUrl);
           return outputUrl;
         }
         else if(activeTool === "dragdrop"){
@@ -405,11 +408,13 @@ const EditorPage = () => {
             }
 
             console.log(`Sticker ${i + 1} applied.`);
+            setResultImage(outputUrl);
             currentImageUrl = outputUrl;
             currentEncodedImage = await fetchImageAsBase64(currentImageUrl);
           }
 
           console.log('Drag & drop generation successful.');
+          setResultImage(outputUrl);
           return outputUrl;
         }
         else{
