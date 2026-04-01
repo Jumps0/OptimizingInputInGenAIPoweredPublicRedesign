@@ -113,6 +113,23 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
     };
   };
 
+  const getAdaptiveBrushSize = (evt: MouseEvent | TouchEvent) => {
+    const touchEvent = ('touches' in evt || 'changedTouches' in evt) ? evt as TouchEvent : null;
+    if (!touchEvent) return brushSize;
+
+    const touch = touchEvent.touches[0] ?? touchEvent.changedTouches[0];
+    if (!touch) return brushSize;
+
+    const radiusX = touch.radiusX || (touch as Touch & { webkitRadiusX?: number }).webkitRadiusX || 0;
+    const radiusY = touch.radiusY || (touch as Touch & { webkitRadiusY?: number }).webkitRadiusY || 0;
+    const maxRadius = Math.max(radiusX, radiusY);
+
+    if (!maxRadius) return brushSize;
+
+    const fingerDiameterOnScreen = maxRadius * 2;
+    return Math.max(20, Math.min(200, Math.round(fingerDiameterOnScreen / Math.max(scale, 0.1))));
+  };
+
   useEffect(() => {
     if (image && containerRef.current && image !== lastFittedImageRef.current) {
       const width = containerRef.current.offsetWidth;
@@ -148,6 +165,12 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
     
     e.evt.preventDefault();
     isDrawing.current = true;
+
+    const adaptiveBrushSize = getAdaptiveBrushSize(e.evt);
+    if (adaptiveBrushSize !== brushSize) {
+      setBrushSize(adaptiveBrushSize);
+    }
+
     const stage = e.target.getStage();
     if (!stage) return;
     
@@ -161,7 +184,11 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
     if (image && (pos.x < 0 || pos.x > image.width || pos.y < 0 || pos.y > image.height)) return;
 
     const clampedPos = clampPointToImage(pos);
-    onLinesChange([...lines, { tool: tool === 'eraser' ? 'eraser' : 'pen', points: [clampedPos.x, clampedPos.y], strokeWidth: brushSize }]);
+    onLinesChange([...lines, {
+      tool: tool === 'eraser' ? 'eraser' : 'pen',
+      points: [clampedPos.x, clampedPos.y],
+      strokeWidth: adaptiveBrushSize,
+    }]);
   };
 
   const handleMouseMove = (e: KonvaPointerEvent) => {
