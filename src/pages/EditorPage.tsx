@@ -266,101 +266,6 @@ const EditorPage = () => {
     }, 5000);
   }
 
-  /*
-  useEffect(() => {
-    const initializePyodide = async () => {
-      if(isPyodideReady) return; // Only call when needed
-
-      console.log("⟳ Initializing Pyodide...");
-
-      try {
-        const pyodide = await loadPyodide({
-          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/" // https://pyodide.org/en/stable/usage/quickstart.html
-        });
-        
-        await pyodide.loadPackage("micropip") // Install micropip first so we can actually use it
-        pyodide.FS.writeFile('/home/pyodide/runflux.py', runflux);
-
-        // Install required packages using micropip
-        // Note: This must be done BEFORE importing them in the script
-        await pyodide.runPythonAsync(`
-          import micropip
-
-          # Install packages - this downloads and installs them from PyPI
-          # Pillow (PIL) and requests are available as pure Python wheels
-          await micropip.install('pillow')
-          await micropip.install('requests')
-
-          print("✓ Packages installed successfully")
-        `);
-        
-        // Now write and import runflux.py
-        pyodide.FS.writeFile('runflux.py', runflux);
-        
-        await pyodide.runPythonAsync(`
-          import runflux
-
-          # Store reference to the function
-          testprint = runflux.testprint
-          run_image_to_image = runflux.run_image_to_image
-          run_inpainting = runflux.run_inpainting
-          print("✓ Function(s) loaded")
-        `);
-
-        pyodideRef.current = pyodide;
-        setIsPyodideReady(true);
-        console.log("✓ Pyrodide is ready");
-      } catch (error) {
-        console.error('Failed to initialize Pyodide:', error);
-      }
-    };
-
-    initializePyodide();
-  }, []);
-
-  const testFunc = async () => {
-    console.log("Call");
-
-    
-    console.log(loading);
-
-
-    const callPythonFunction = async (inputString: string): Promise<string | null> => {
-      if (!pyodideRef.current) {
-        console.error('Pyodide not ready');
-        return null;
-      }
-
-      try {
-        setLoading(true);
-        const escapedInput = inputString.replace(/"/g, '\\"');
-
-        const result = pyodideRef.current.runPython(`
-          import runflux
-          result = runflux.testprint("${escapedInput}")
-          result
-        `);
-        
-        console.log(`Input: "${inputString}" → Output: "${result}"`);
-        return result;
-      } catch (error) {
-        console.error('Error calling Python function:', error);
-        return null;
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const handleProcessString = async (): Promise<void> => {
-      const testString = "Hello, world ";
-      const result = await callPythonFunction(testString);
-      console.log('Final result:', result);
-    };
-    
-    handleProcessString();
-  };
-  */
-
   const handleGenerate = async () => {
     console.log("Starting process...");
     setIsGenerating(true);
@@ -710,14 +615,36 @@ const EditorPage = () => {
     return (
       <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
 
-        <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden ring-4 ring-white">
-          <ComparisonSlider
-            originalImage={previewUrl}
-            editedImage={resultImage}
-          />
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6 border-b border-gray-200/80 pb-6">
+          <div className="space-y-2 min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700">
+              Round {sessionRound}
+            </p>
+            <h3 className="text-xl font-bold text-gray-900 tracking-tight sm:text-2xl">Before &amp; after</h3>
+            {/*}
+            <p className="text-sm leading-relaxed text-gray-600 max-w-xl">
+              Your source image is on the left; the redesign is on the right. Drag the slider to compare, then choose{" "}
+              <span className="font-medium text-gray-800">Exit to Gallery</span> if you are satisfied,{" "}
+              <span className="font-medium text-gray-800">Refine this Result</span> to continue editing, or{" "}
+              <span className="font-medium text-gray-800">Restart</span> to start over again.
+            </p>
+            */}
+          </div>
+          <span className="shrink-0 self-start sm:self-auto inline-flex items-center rounded-full border border-emerald-200/90 bg-emerald-50/90 px-3 py-1.5 text-xs font-semibold text-emerald-800 shadow-sm">
+            Output ready
+          </span>
         </div>
 
         <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/90 via-white to-teal-50/40 p-5 sm:p-6 shadow-sm space-y-4">
+
+        <div className="flex flex-col gap-1">
+            <p className="text-sm font-semibold text-gray-900">Image generation complete!</p>
+            <p className="text-xs text-gray-600">
+              You may now exit to the Gallery and see the photo(s) you have generated, restart with the same original photo, or go back to the editor to refine your image further. 
+              {/* If you're not happy with the result, please give feedback so we can improve the system! */}
+            </p>
+          </div>
+
         <div className="flex flex-col sm:flex-row gap-3">
             <button
             type="button"
@@ -744,13 +671,6 @@ const EditorPage = () => {
             <Sparkles size={18} />
             Refine This Result
           </button>
-          </div>
-          <div className="flex flex-col gap-1">
-            <p className="text-sm font-semibold text-gray-900">Image generation complete!</p>
-            <p className="text-xs text-gray-600">
-              You may now exit to the Gallery and see the photo(s) you have generated, restart with the same original photo, or go back to the editor to refine your image further. 
-              {/* If you're not happy with the result, please give feedback so we can improve the system! */}
-            </p>
           </div>
 
           
@@ -820,23 +740,12 @@ const EditorPage = () => {
           )}
         </div>
 
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6 border-b border-gray-200/80 pb-6">
-        <div className="space-y-2 min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700">
-            Round {sessionRound}
-          </p>
-          <h3 className="text-xl font-bold text-gray-900 tracking-tight sm:text-2xl">Before &amp; after</h3>
-          <p className="text-sm leading-relaxed text-gray-600 max-w-xl">
-            Your source image is on the left; the redesign is on the right. Drag the slider to compare, then choose{" "}
-            <span className="font-medium text-gray-800">Exit to Gallery</span> if you are satisfied,{" "}
-            <span className="font-medium text-gray-800">Refine this Result</span> to continue editing, or{" "}
-            <span className="font-medium text-gray-800">Restart</span> to start over again.
-          </p>
+        <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden ring-4 ring-white">
+          <ComparisonSlider
+            originalImage={previewUrl}
+            editedImage={resultImage}
+          />
         </div>
-        <span className="shrink-0 self-start sm:self-auto inline-flex items-center rounded-full border border-emerald-200/90 bg-emerald-50/90 px-3 py-1.5 text-xs font-semibold text-emerald-800 shadow-sm">
-          Output ready
-        </span>
-      </div>
 
         {/*}
         <div className="flex flex-col sm:flex-row gap-4">
