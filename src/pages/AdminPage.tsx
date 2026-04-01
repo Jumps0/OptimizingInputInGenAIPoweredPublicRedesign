@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { loadPyodide, type PyodideInterface } from 'pyodide';
+import { useState, useEffect, useMemo, /*useRef*/ } from 'react';
 import { useAuth } from '@/context';
 import {
   fetchUsers,
@@ -30,8 +29,6 @@ import {
   ArrowRight,
   MessageSquareQuote
 } from 'lucide-react';
-
-import runflux from '../runflux.py?raw';
 
 // Helper for conditional classes
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(' ');
@@ -360,7 +357,7 @@ const AdminPage = () => {
                 );
               })()}
             </div>
-
+              {/*
             <div className="flex items-center gap-3 w-full md:w-auto">
               {(() => {
                 const [isPyodideReady, setIsPyodideReady] = useState<boolean>(false);
@@ -371,7 +368,7 @@ const AdminPage = () => {
                   const initializePyodide = async () => {
                     try {
                       const pyodide = await loadPyodide({
-                        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/" /* https://pyodide.org/en/stable/usage/quickstart.html */
+                        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/" // https://pyodide.org/en/stable/usage/quickstart.html
                       });
                       
                       await pyodide.loadPackage("micropip") // Install micropip first so we can actually use it
@@ -456,7 +453,7 @@ const AdminPage = () => {
               }
               )()}
             </div>
-
+              */}
             <div className="flex items-center gap-3 w-full md:w-auto"> {/*Search bar*/}
               {activeTab === 'prompts' && (
                 <div className="flex bg-gray-200/50 p-1 rounded-lg mr-2">
