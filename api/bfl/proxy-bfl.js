@@ -79,23 +79,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      const { id, polling_url, image_url, api_key } = req.query;
-
-      if (image_url) {
-        const imageResponse = await fetch(String(image_url));
-        if (!imageResponse.ok) {
-          return res.status(502).json({
-            error: `Failed to fetch remote image: ${imageResponse.status} ${imageResponse.statusText}`,
-          });
-        }
-
-        const arrayBuffer = await imageResponse.arrayBuffer();
-        const base64 = Buffer.from(arrayBuffer).toString('base64');
-        const contentType = imageResponse.headers.get('content-type') || 'application/octet-stream';
-
-        return res.status(200).json({ base64, contentType });
-      }
-
+      const { id, polling_url, api_key } = req.query;
       const key = process.env.BFL_API_KEY || api_key;
 
       if (!key) {

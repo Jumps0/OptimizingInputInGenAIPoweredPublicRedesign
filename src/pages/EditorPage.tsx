@@ -83,23 +83,6 @@ const EditorPage = () => {
 
 
   const fetchImageAsBase64 = async (imageUrl: string): Promise<string> => {
-    const isRemoteHttpUrl = /^https?:\/\//i.test(imageUrl);
-
-    if (isRemoteHttpUrl) {
-      const proxyResponse = await fetch(`/api/bfl/proxy-bfl?image_url=${encodeURIComponent(imageUrl)}`);
-      const proxyData = await proxyResponse.json();
-
-      if (!proxyResponse.ok) {
-        throw new Error(proxyData?.error || `Failed to proxy remote image: ${proxyResponse.status}`);
-      }
-
-      if (!proxyData?.base64) {
-        throw new Error('Proxy did not return base64 image data');
-      }
-
-      return proxyData.base64;
-    }
-
     const response = await fetch(imageUrl);
     if (!response.ok) {
       throw new Error(`Failed to load image for upload: ${response.status}`);

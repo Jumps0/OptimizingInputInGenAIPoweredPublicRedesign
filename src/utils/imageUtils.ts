@@ -158,8 +158,6 @@ export const applyInpaintingFilter = async (imageUrl: string, lines: LineType[])
 export const applyDragDropMask = async (imageUrl: string, elements: DroppedElement[]): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
-
-    // Only set crossOrigin if it's not a local blob/data URL
     if (!imageUrl.startsWith('data:') && !imageUrl.startsWith('blob:')) {
       img.crossOrigin = "Anonymous";
     }
