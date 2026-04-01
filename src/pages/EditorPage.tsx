@@ -869,20 +869,22 @@ const EditorPage = () => {
   const renderEditor = () => (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
       {/* Image Preview Card */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-md overflow-hidden group">
-        {previewUrl && (
-          <div className="relative bg-gray-100">
-            <img
-              src={previewUrl}
-              alt="Original Space"
-              className="w-full max-h-[50vh] object-contain mx-auto"
-            />
-            <div className="absolute top-3 right-3 bg-black/50 backdrop-blur text-white text-xs px-2 py-1 rounded font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-              Original
+      {activeTool !== "inpainting" && activeTool !== "dragdrop" && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-md overflow-hidden group">
+          {previewUrl && (
+            <div className="relative bg-gray-100">
+              <img
+                src={previewUrl}
+                alt="Original Space"
+                className="w-full max-h-[50vh] object-contain mx-auto"
+              />
+              <div className="absolute top-3 right-3 bg-black/50 backdrop-blur text-white text-xs px-2 py-1 rounded font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                Original
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Tool Controls Card */}
       <div className="bg-white border border-gray-100 shadow-lg shadow-emerald-50/50 rounded-2xl p-6 md:p-8 relative overflow-hidden">
