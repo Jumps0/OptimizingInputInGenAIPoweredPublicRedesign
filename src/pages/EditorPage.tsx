@@ -831,9 +831,10 @@ const EditorPage = () => {
         </div>
         <div className="mb-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Method
-            </h4>
+            {isAdmin ? (                
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Method
+              </h4>) : null}
 
             {isAdmin ? (
               <div className="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1 gap-1">
@@ -861,9 +862,7 @@ const EditorPage = () => {
                 })}
               </div>
             ) : (
-              <span className="inline-flex items-center rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3 py-1 text-xs font-semibold text-emerald-900 shadow-sm">
-                {user?.assignedMethod ?? "text"}
-              </span>
+              <div></div> // Nothing!
             )}
           </div>
         </div>
