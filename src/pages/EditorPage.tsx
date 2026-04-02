@@ -226,8 +226,9 @@ const EditorPage = () => {
      This is also a hook --> useEffect(() => { ... }, []);
   */
   
-  // Basic debug function to show a specific image in a popup
-  const showImagePopup = (image: HTMLImageElement) => {
+  // Basic debug function to show a specific image URL/data URL in a popup.
+  // Accepts both full data URLs and raw base64 mask strings.
+  const showImagePopup = (imageSrc: string) => {
     // Create popup div
     const popup = document.createElement('div');
     popup.style.position = 'fixed';
@@ -242,9 +243,15 @@ const EditorPage = () => {
     popup.style.maxWidth = '40vw';
     popup.style.maxHeight = '40vh';
     
-    // Clone and display image
-    const img = image.cloneNode() as HTMLImageElement;
-    img.style.width = '100%';
+    // Normalize raw base64 masks into a displayable data URL.
+    const normalizedSrc = imageSrc.startsWith('data:')
+      ? imageSrc
+      : `data:image/png;base64,${imageSrc}`;
+
+    // Display image source directly (e.g., mask data URL)
+    const img = document.createElement('img');
+    img.src = normalizedSrc;
+    img.style.width = '70%';
     img.style.height = 'auto';
     img.style.objectFit = 'contain';
     
@@ -254,7 +261,7 @@ const EditorPage = () => {
     // Remove after 5 seconds
     setTimeout(() => {
       popup.remove();
-    }, 5000);
+    }, 10000);
   }
 
   const handleGenerate = async () => {
@@ -389,6 +396,7 @@ const EditorPage = () => {
             return null;
           }
 
+          // Split prompt into relevant segments
           const promptSegments = inputPrompt
             .split(',')
             .map((segment) => segment.trim())
@@ -398,10 +406,12 @@ const EditorPage = () => {
           let currentEncodedImage = encodedImage;
           let outputUrl: string | null = null;
 
+          // Loop through each element and modify one at a time
           for (let i = 0; i < _placedElements.length; i += 1) {
             const element = _placedElements[i];
 
             const mask = await applyDragDropMask(currentImageUrl, [element]);
+            if(false)showImagePopup(mask);
             
             // Get relevant segment
             const segmentPrompt = promptSegments[i] || `add a ${element.label.toLowerCase()}`;

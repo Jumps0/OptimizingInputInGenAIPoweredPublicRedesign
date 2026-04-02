@@ -180,7 +180,7 @@ export const applyDragDropMask = async (imageUrl: string, elements: DroppedEleme
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        const circleRadius = canvas.height * 0.05; // 10% of height = diameter, so radius is 5%. If this doesn't work we can swap to a fixed pixel size.
+        const circleRadius = canvas.height * 0.2; // 40% of height = diameter, so radius is 20%. If this doesn't work we can swap to a fixed pixel size.
 
         elements.forEach((element) => {
           const x = (element.x / 100) * canvas.width;
