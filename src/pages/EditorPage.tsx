@@ -9,7 +9,7 @@ import type { DroppedElement } from "@/components/Editor/DragDropEditor";
 import {  Sparkles, RotateCcw, /*Check, MessageSquareText, X*/ } from "lucide-react";
 import ComparisonSlider from "@/components/ComparisonSlider";
 import { METHODS } from "@/utils/constants";
-import { /*applySepiaFilter, */applyInpaintingFilter, applyDragDropMask/*,applyDragDropFilter*/ } from "@/utils/imageUtils";
+import { /*applySepiaFilter, */applyInpaintingFilter, applyDragDropMask, fetchImageAsDataUrl, getReusableImageUrl/*,applyDragDropFilter*/ } from "@/utils/imageUtils";
 
 // import SuggestionGallery from "@/components/SuggestionGallery";
 import {
@@ -83,22 +83,13 @@ const EditorPage = () => {
 
 
   const fetchImageAsBase64 = async (imageUrl: string): Promise<string> => {
-    const response = await fetch(imageUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to load image for upload: ${response.status}`);
-    }
+    const dataUrl = await fetchImageAsDataUrl(imageUrl);
+    return dataUrl.split(',')[1] || '';
+  };
 
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        const base64 = dataUrl.split(',')[1] || '';
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+  const normalizeGeneratedImageUrl = (imageUrl: string | null | undefined) => {
+    if (!imageUrl) return null;
+    return getReusableImageUrl(imageUrl);
   };
 
   const bflImage2Image = async (prompt: string, encodedImage: string) => {
@@ -307,9 +298,15 @@ const EditorPage = () => {
             return null;
           }
 
+          const reusableOutputUrl = normalizeGeneratedImageUrl(outputUrl);
+          if (!reusableOutputUrl) {
+            console.error('BFL proxy output URL could not be normalized:', pollResult);
+            return null;
+          }
+
           console.log('Generation successful.');
-          setResultImage(outputUrl);
-          return outputUrl;
+          setResultImage(reusableOutputUrl);
+          return reusableOutputUrl;
         }
         else if(activeTool === "voice"){
           console.log("...to perform voice-to-image. Prompt:", inputPrompt);
@@ -335,9 +332,15 @@ const EditorPage = () => {
             return null;
           }
 
+          const reusableOutputUrl = normalizeGeneratedImageUrl(outputUrl);
+          if (!reusableOutputUrl) {
+            console.error('BFL proxy output URL could not be normalized:', pollResult);
+            return null;
+          }
+
           console.log('Generation successful.');
-          setResultImage(outputUrl);
-          return outputUrl;
+          setResultImage(reusableOutputUrl);
+          return reusableOutputUrl;
         }
         else if(activeTool === "inpainting"){
           console.log("...to perform inpainting. Prompt:", inputPrompt);
@@ -368,9 +371,15 @@ const EditorPage = () => {
             return null;
           }
 
+          const reusableOutputUrl = normalizeGeneratedImageUrl(outputUrl);
+          if (!reusableOutputUrl) {
+            console.error('BFL proxy output URL could not be normalized:', pollResult);
+            return null;
+          }
+
           console.log('Generation successful.');
-          setResultImage(outputUrl);
-          return outputUrl;
+          setResultImage(reusableOutputUrl);
+          return reusableOutputUrl;
         }
         else if(activeTool === "dragdrop"){
           console.log("...to perform drag & drop.");
@@ -407,10 +416,17 @@ const EditorPage = () => {
               return null;
             }
 
+            const reusableOutputUrl = normalizeGeneratedImageUrl(outputUrl);
+            if (!reusableOutputUrl) {
+              console.error('BFL proxy output URL could not be normalized:', pollResult);
+              return null;
+            }
+
             console.log(`Sticker ${i + 1} applied.`);
-            setResultImage(outputUrl);
-            currentImageUrl = outputUrl;
+            setResultImage(reusableOutputUrl);
+            currentImageUrl = reusableOutputUrl;
             currentEncodedImage = await fetchImageAsBase64(currentImageUrl);
+            outputUrl = reusableOutputUrl;
           }
 
           console.log('Drag & drop generation successful.');

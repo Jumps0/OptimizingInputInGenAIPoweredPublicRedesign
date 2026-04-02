@@ -1,5 +1,7 @@
 import type { LineType } from '@/components/Editor/InpaintingEditor';
 
+const IMAGE_PROXY_ENDPOINT = '/api/bfl/proxy-bfl';
+
 export interface DroppedElement {
   id: string;
   type: string;
@@ -391,9 +393,51 @@ export const fetchImageBytes = async (imageUrl: string): Promise<{ bytes: Uint8A
   };
 };
 
+export const getReusableImageUrl = (imageUrl: string): string => {
+  if (!imageUrl || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+    return imageUrl;
+  }
+
+  if (typeof window === 'undefined') {
+    return imageUrl;
+  }
+
+  try {
+    const resolvedUrl = new URL(imageUrl, window.location.origin);
+    if (resolvedUrl.origin === window.location.origin) {
+      return imageUrl;
+    }
+
+    const proxyUrl = new URL(IMAGE_PROXY_ENDPOINT, window.location.origin);
+    proxyUrl.searchParams.set('image_url', resolvedUrl.toString());
+    return `${proxyUrl.pathname}${proxyUrl.search}`;
+  } catch {
+    return imageUrl;
+  }
+};
+
+export const fetchImageAsDataUrl = async (imageUrl: string): Promise<string> => {
+  if (imageUrl.startsWith('data:')) {
+    return imageUrl;
+  }
+
+  const response = await fetch(getReusableImageUrl(imageUrl));
+  if (!response.ok) {
+    throw new Error(`Failed to load image for upload: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
 export const downloadImage = (imageUrl: string, filename: string = 'redesigned-space.jpg') => {
   const link = document.createElement('a');
-  link.href = imageUrl;
+  link.href = getReusableImageUrl(imageUrl);
   link.download = filename;
   document.body.appendChild(link);
   link.click();
@@ -403,8 +447,9 @@ export const downloadImage = (imageUrl: string, filename: string = 'redesigned-s
 export const compressImage = async (imageUrl: string, maxWidth = 1024, quality = 0.7): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    const reusableImageUrl = getReusableImageUrl(imageUrl);
     // Only set crossOrigin if it's not a local blob/data URL
-    if (!imageUrl.startsWith('data:') && !imageUrl.startsWith('blob:')) {
+    if (!reusableImageUrl.startsWith('data:') && !reusableImageUrl.startsWith('blob:')) {
       img.crossOrigin = "Anonymous";
     }
 
@@ -446,6 +491,6 @@ export const compressImage = async (imageUrl: string, maxWidth = 1024, quality =
       reject(new Error("Failed to load image"));
     };
 
-    img.src = imageUrl;
+    img.src = reusableImageUrl;
   });
 };

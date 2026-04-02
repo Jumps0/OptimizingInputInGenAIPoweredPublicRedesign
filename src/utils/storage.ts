@@ -11,7 +11,7 @@ export interface ResultFeedback {
   message: string;
   createdAt: string;
 }
-import { compressImage } from './imageUtils';
+import { compressImage, fetchImageAsDataUrl } from './imageUtils';
 
 const STORAGE_KEYS = {
   USERS: 'citizen_redesign_users_v3',
@@ -225,6 +225,19 @@ const safelySetItem = (key: string, value: string): boolean => {
   }
 };
 
+const toPersistentImageData = async (imageUrl: string): Promise<string> => {
+  if (!imageUrl) {
+    return imageUrl;
+  }
+
+  try {
+    return await compressImage(imageUrl, 800, 0.6);
+  } catch (e) {
+    console.warn('Failed to compress image, falling back to raw data URL.', e);
+    return fetchImageAsDataUrl(imageUrl);
+  }
+};
+
 export const saveNewGeneration = async (
   userId: number,
   prompt: string,
@@ -236,44 +249,9 @@ export const saveNewGeneration = async (
 
   // Compress images before storage
   // Use a max width of 800px and 0.6 quality to keep size small
-  let persistentInputImage = inputImage;
-  if (inputImage.startsWith('blob:') || inputImage.startsWith('data:')) {
-    try {
-      persistentInputImage = await compressImage(inputImage, 800, 0.6);
-    } catch (e) {
-      console.warn("Failed to compress input image, using original", e);
-      // Fallback to basic conversion if compression fails
-      if (inputImage.startsWith('blob:')) {
-          // Inline simple blob to base64 here since we removed the helper usage
-          const response = await fetch(inputImage);
-          const blob = await response.blob();
-          persistentInputImage = await new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve(reader.result as string);
-              reader.readAsDataURL(blob);
-          });
-      }
-    }
-  }
+  const persistentInputImage = await toPersistentImageData(inputImage);
   
-  let persistentOutputImage = outputImage;
-  if (outputImage.startsWith('blob:') || outputImage.startsWith('data:')) {
-    try {
-      persistentOutputImage = await compressImage(outputImage, 800, 0.6);
-    } catch (e) {
-       console.warn("Failed to compress output image, using original", e);
-       // Fallback
-       if (outputImage.startsWith('blob:')) {
-          const response = await fetch(outputImage);
-          const blob = await response.blob();
-          persistentOutputImage = await new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve(reader.result as string);
-              reader.readAsDataURL(blob);
-          });
-      }
-    }
-  }
+  const persistentOutputImage = await toPersistentImageData(outputImage);
 
   // Create a new project for this generation
   const newProjectId = projects.length > 0 ? Math.max(...projects.map(p => p.id)) + 1 : 1;

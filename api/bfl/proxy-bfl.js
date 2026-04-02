@@ -1,9 +1,23 @@
+const ALLOWED_IMAGE_HOST_SUFFIXES = ['bfl.ai'];
+
+const setCorsHeaders = (res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+};
+
+const isAllowedImageHost = (hostname) => {
+  const normalizedHost = String(hostname || '').toLowerCase();
+  return ALLOWED_IMAGE_HOST_SUFFIXES.some(
+    (suffix) => normalizedHost === suffix || normalizedHost.endsWith(`.${suffix}`)
+  );
+};
+
 export default async function handler(req, res) {
+  setCorsHeaders(res);
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     return res.status(204).end();
   }
 
@@ -79,7 +93,37 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      const { id, polling_url, api_key } = req.query;
+      const { id, polling_url, api_key, image_url } = req.query;
+
+      if (image_url) {
+        const targetUrl = new URL(String(image_url));
+
+        if (!['http:', 'https:'].includes(targetUrl.protocol)) {
+          return res.status(400).json({ error: 'Unsupported image_url protocol.' });
+        }
+
+        if (!isAllowedImageHost(targetUrl.hostname)) {
+          return res.status(400).json({ error: `Unapproved image host: ${targetUrl.hostname}` });
+        }
+
+        const response = await fetch(targetUrl, {
+          method: 'GET',
+          redirect: 'follow',
+        });
+
+        if (!response.ok) {
+          return res.status(502).json({ error: `Failed to fetch image: ${response.status}` });
+        }
+
+        const contentType = response.headers.get('content-type') || 'application/octet-stream';
+        const cacheControl = response.headers.get('cache-control') || 'public, max-age=3600';
+        const arrayBuffer = await response.arrayBuffer();
+
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', cacheControl);
+        return res.status(200).send(Buffer.from(arrayBuffer));
+      }
+
       const key = process.env.BFL_API_KEY || api_key;
 
       if (!key) {
