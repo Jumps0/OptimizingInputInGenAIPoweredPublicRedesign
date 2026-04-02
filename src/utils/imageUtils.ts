@@ -423,7 +423,8 @@ export const fetchImageAsDataUrl = async (imageUrl: string): Promise<string> => 
 
   const response = await fetch(getReusableImageUrl(imageUrl));
   if (!response.ok) {
-    throw new Error(`Failed to load image for upload: ${response.status}`);
+    const errorText = await response.text();
+    throw new Error(`Failed to load image for upload: ${response.status}${errorText ? ` ${errorText}` : ''}`);
   }
 
   const blob = await response.blob();

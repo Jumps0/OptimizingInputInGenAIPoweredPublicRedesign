@@ -1,16 +1,38 @@
-const ALLOWED_IMAGE_HOST_SUFFIXES = ['bfl.ai'];
-
 const setCorsHeaders = (res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 };
 
-const isAllowedImageHost = (hostname) => {
-  const normalizedHost = String(hostname || '').toLowerCase();
-  return ALLOWED_IMAGE_HOST_SUFFIXES.some(
-    (suffix) => normalizedHost === suffix || normalizedHost.endsWith(`.${suffix}`)
-  );
+const PRIVATE_IPV4_RANGES = [
+  /^10\./,
+  /^127\./,
+  /^169\.254\./,
+  /^172\.(1[6-9]|2\d|3[0-1])\./,
+  /^192\.168\./,
+];
+
+const isPrivateHost = (hostname) => {
+  const normalizedHost = String(hostname || '').trim().toLowerCase();
+
+  if (!normalizedHost) {
+    return true;
+  }
+
+  if (
+    normalizedHost === 'localhost' ||
+    normalizedHost === '0.0.0.0' ||
+    normalizedHost === '::1' ||
+    normalizedHost.endsWith('.localhost')
+  ) {
+    return true;
+  }
+
+  if (normalizedHost.includes(':')) {
+    return normalizedHost.startsWith('fc') || normalizedHost.startsWith('fd') || normalizedHost.startsWith('fe80');
+  }
+
+  return PRIVATE_IPV4_RANGES.some((pattern) => pattern.test(normalizedHost));
 };
 
 export default async function handler(req, res) {
@@ -102,8 +124,8 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Unsupported image_url protocol.' });
         }
 
-        if (!isAllowedImageHost(targetUrl.hostname)) {
-          return res.status(400).json({ error: `Unapproved image host: ${targetUrl.hostname}` });
+        if (isPrivateHost(targetUrl.hostname)) {
+          return res.status(400).json({ error: `Blocked private image host: ${targetUrl.hostname}` });
         }
 
         const response = await fetch(targetUrl, {

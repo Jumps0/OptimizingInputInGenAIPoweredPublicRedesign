@@ -424,6 +424,7 @@ const EditorPage = () => {
 
             console.log(`Sticker ${i + 1} applied.`);
             setResultImage(reusableOutputUrl);
+            setPreviewUrl(reusableOutputUrl); // Update preview for next iteration
             currentImageUrl = reusableOutputUrl;
             currentEncodedImage = await fetchImageAsBase64(currentImageUrl);
             outputUrl = reusableOutputUrl;
