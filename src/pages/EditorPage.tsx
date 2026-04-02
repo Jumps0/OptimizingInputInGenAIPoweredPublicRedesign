@@ -389,16 +389,25 @@ const EditorPage = () => {
             return null;
           }
 
+          const promptSegments = inputPrompt
+            .split(',')
+            .map((segment) => segment.trim())
+            .filter(Boolean);
+
           let currentImageUrl = previewUrl;
           let currentEncodedImage = encodedImage;
           let outputUrl: string | null = null;
 
           for (let i = 0; i < _placedElements.length; i += 1) {
             const element = _placedElements[i];
-            console.log(`Processing sticker ${i + 1}/${_placedElements.length}:`, element);
 
             const mask = await applyDragDropMask(currentImageUrl, [element]);
-            const inpaintResult = await bflInpainting(inputPrompt, currentEncodedImage, mask);
+            
+            // Get relevant segment
+            const segmentPrompt = promptSegments[i] || `add a ${element.label.toLowerCase()}`;
+
+           console.log(`Processing sticker ${i + 1}/${_placedElements.length}:`, element, 'with prompt segment:', segmentPrompt);
+            const inpaintResult = await bflInpainting(segmentPrompt, currentEncodedImage, mask);
 
             const requestId = inpaintResult?.id;
             const pollingUrl = inpaintResult?.polling_url;

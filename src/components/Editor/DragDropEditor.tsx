@@ -39,13 +39,8 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
       return;
     }
 
-    const elementsCount = placedElements.reduce((acc, curr) => {
-      acc[curr.label] = (acc[curr.label] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    const promptText = "Add " + Object.entries(elementsCount)
-      .map(([name, count]) => `${count} ${name.toLowerCase()}${count > 1 ? 's' : ''}`)
+    const promptText = placedElements
+      .map((element) => "Add a " + element.label.toLowerCase())
       .join(', ');
       
     onPromptChange(promptText);
