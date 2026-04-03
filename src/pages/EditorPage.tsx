@@ -450,7 +450,8 @@ const EditorPage = () => {
           }
 
           console.log('Drag & drop generation successful.');
-          setResultImage(outputUrl);
+          setPreviewUrl(encodedImage); // Reset preview to original "Before" image
+          setResultImage(outputUrl); // Set final "After" image
           return outputUrl;
         }
         else{
