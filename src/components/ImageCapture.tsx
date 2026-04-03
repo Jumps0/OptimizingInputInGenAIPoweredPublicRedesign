@@ -175,6 +175,7 @@ const ImageCapture = ({ onImageSelect }: ImageCaptureProps) => {
           </div>
         ) : null}
         <div className="flex shrink-0 items-center justify-between gap-3 px-1 pb-3">
+          {/*
           <button
             type="button"
             onClick={stopCamera}
@@ -183,10 +184,12 @@ const ImageCapture = ({ onImageSelect }: ImageCaptureProps) => {
           >
             <X size={22} strokeWidth={2} />
           </button>
+          */}
           <div className="flex flex-col items-center text-center">
             <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/50">Live view</span>
             <span className="text-sm font-medium text-white/90">Frame your space</span>
           </div>
+          {/*
           <button
             type="button"
             onClick={switchCamera}
@@ -195,6 +198,7 @@ const ImageCapture = ({ onImageSelect }: ImageCaptureProps) => {
           >
             <SwitchCamera size={22} strokeWidth={2} />
           </button>
+          */}
         </div>
 
         <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl ring-1 ring-white/15">
@@ -296,7 +300,7 @@ const ImageCapture = ({ onImageSelect }: ImageCaptureProps) => {
           <button
             type="button"
             onClick={openCamera}
-            className="flex w-full items-center justify-center gap-3 rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-700 py-6 text-lg font-semibold text-white shadow-xl shadow-emerald-900/20 transition hover:brightness-105 active:scale-[0.99] sm:py-7 sm:text-xl"
+            className="flex w-full items-center justify-center gap-3 rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-700 py-12 text-lg font-semibold text-white shadow-xl shadow-emerald-900/20 transition hover:brightness-105 active:scale-[0.99] sm:py-15 sm:text-xl"
           >
             <Camera size={28} className="shrink-0 opacity-95" strokeWidth={2} />
             <span>Take a photo</span>

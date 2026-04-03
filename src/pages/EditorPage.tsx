@@ -932,12 +932,14 @@ const EditorPage = () => {
               </div>
             </div> */}
 
+            {/*}
             <div className="mt-4 flex flex-wrap items-center gap-2 sm:hidden">
               <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">Method</span>
               <span className="inline-flex items-center rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3 py-1 text-xs font-semibold text-emerald-900">
                 {activeTool}
               </span>
             </div>
+            */}
           </div>
 
           <div className="w-full flex-1 flex flex-col justify-center bg-white/85 backdrop-blur-xl border border-emerald-200/80 rounded-3xl shadow-2xl shadow-emerald-100/50 p-4 sm:p-8 md:p-10 min-h-0">
