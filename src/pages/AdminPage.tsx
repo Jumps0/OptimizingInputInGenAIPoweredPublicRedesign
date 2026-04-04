@@ -555,7 +555,7 @@ const AdminPage = () => {
                                   <div className="w-6 h-6 rounded-full bg-e-100 text-e-600 flex items-center justify-center text-xs font-bold">
                                     {userNameById.get(item.userId)}
                                   </div>
-                                  <span className="text-sm text-gray-600 font-mono">#{item.userId}</span>
+                                  <span className="text-sm text-gray-600 font-mono"> #{item.userId}</span>
                                 </div>
                               </td>
                               <td className="p-4 max-w-md align-top">
@@ -676,7 +676,7 @@ const AdminPage = () => {
                               <div className="p-4 flex-1 flex flex-col">
                                 <div className="flex items-start justify-between gap-2 mb-3">
                                   <div className="flex items-center gap-2">
-                                    <div className="rounded-full  bg-cyan-500 px-2 py-1 text-e-600 text-sm font-bold border">
+                                    <div className="rounded-full  bg-cyan-500 px-2 py-1 text-e-600 text-sm font-semibold border">
                                       {userNameById.get(item.userId)}
                                     </div>
                                     <span className="text-xs text-gray-500 font-medium">User #{item.userId}</span>

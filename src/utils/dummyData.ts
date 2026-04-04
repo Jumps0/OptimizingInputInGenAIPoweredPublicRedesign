@@ -41,14 +41,14 @@ export interface PostStudyResponse {
 }
 
 import {
-  getStoredUsers,
   getStoredProjects,
   getStoredHistory,
   getStoredResultFeedbacks,
+  fetchUsersWithFallback,
 } from './storage';
 
 export const fetchUsers = async (): Promise<User[]> => {
-  return getStoredUsers();
+  return fetchUsersWithFallback();
 };
 
 export const fetchProjects = async (): Promise<Project[]> => {

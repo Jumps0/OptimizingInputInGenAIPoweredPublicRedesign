@@ -31,6 +31,21 @@ const INITIAL_HISTORY: EditHistory[] = [];
 const INITIAL_RESPONSES: PostStudyResponse[] = [];
 const INITIAL_RESULT_FEEDBACK: ResultFeedback[] = [];
 
+const readStoredJson = <T>(key: string, fallback: T): T => {
+  const raw = localStorage.getItem(key);
+  if (!raw) {
+    return fallback;
+  }
+
+  try {
+    return JSON.parse(raw) as T;
+  } catch (error) {
+    console.warn(`Invalid JSON in localStorage for key "${key}". Resetting to fallback.`, error);
+    localStorage.setItem(key, JSON.stringify(fallback));
+    return fallback;
+  }
+};
+
 export const initializeStorage = () => {
   if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(INITIAL_USERS));
@@ -50,33 +65,65 @@ export const initializeStorage = () => {
 };
 
 export const getStoredUsers = (): User[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.USERS);
-  return data ? JSON.parse(data) : INITIAL_USERS;
+  return readStoredJson<User[]>(STORAGE_KEYS.USERS, INITIAL_USERS);
+};
+
+const syncUsersToBlob = async (users: User[]): Promise<void> => {
+  const response = await fetch('/api/users', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    keepalive: true,
+    body: JSON.stringify({ users }),
+  });
+
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(errorBody?.error || 'Failed to sync users to blob storage');
+  }
+};
+
+export const fetchUsersWithFallback = async (): Promise<User[]> => {
+  const localUsers = getStoredUsers();
+
+  try {
+    const response = await fetch('/api/users', {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      throw new Error('Users blob endpoint returned non-OK status');
+    }
+
+    const data = (await response.json()) as { users?: User[] };
+    const blobUsers = Array.isArray(data.users) ? data.users : [];
+
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(blobUsers));
+    return blobUsers;
+  } catch {
+    return localUsers;
+  }
 };
 
 export const getStoredProjects = (): Project[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.PROJECTS);
-  return data ? JSON.parse(data) : INITIAL_PROJECTS;
+  return readStoredJson<Project[]>(STORAGE_KEYS.PROJECTS, INITIAL_PROJECTS);
 };
 
 export const getStoredHistory = (): EditHistory[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.HISTORY);
-  return data ? JSON.parse(data) : INITIAL_HISTORY;
+  return readStoredJson<EditHistory[]>(STORAGE_KEYS.HISTORY, INITIAL_HISTORY);
 };
 
 export const getCurrentUser = (): User | null => {
-  const data = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-  return data ? JSON.parse(data) : null;
+  return readStoredJson<User | null>(STORAGE_KEYS.CURRENT_USER, null);
 };
 
 export const getStoredResponses = (): PostStudyResponse[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.RESPONSES);
-  return data ? JSON.parse(data) : INITIAL_RESPONSES;
+  return readStoredJson<PostStudyResponse[]>(STORAGE_KEYS.RESPONSES, INITIAL_RESPONSES);
 };
 
 export const getStoredResultFeedbacks = (): ResultFeedback[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.RESULT_FEEDBACK);
-  return data ? JSON.parse(data) : INITIAL_RESULT_FEEDBACK;
+  return readStoredJson<ResultFeedback[]>(STORAGE_KEYS.RESULT_FEEDBACK, INITIAL_RESULT_FEEDBACK);
 };
 
 export const addResultFeedback = (entry: {
@@ -122,6 +169,9 @@ export const addUser = (user: User) => { // Add new user to storage
   const users = getStoredUsers();
   users.push(user);
   localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+  syncUsersToBlob(users).catch((error) => {
+    console.warn('Blob user sync failed, continuing with local users only.', error);
+  });
 };
 
 export const removeUser = (user: User) => { // Remove user and associated data
@@ -130,6 +180,9 @@ export const removeUser = (user: User) => { // Remove user and associated data
   if (index !== -1) {
     users.splice(index, 1);
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+    syncUsersToBlob(users).catch((error) => {
+      console.warn('Blob user sync failed, continuing with local users only.', error);
+    });
   }
 };
 
@@ -139,6 +192,9 @@ export const renameUser = (user: User, newName: string) => { // Rename specified
   if (index !== -1) {
     users[index].username = newName;
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+    syncUsersToBlob(users).catch((error) => {
+      console.warn('Blob user sync failed, continuing with local users only.', error);
+    });
   }
 };
 
@@ -185,31 +241,47 @@ export const savePostStudyResponse = async (
 };
 
 export const fetchPostStudyResponses = async (): Promise<PostStudyResponse[]> => {
-  const response = await fetch('/api/post-study-responses', {
-    method: 'GET',
-  });
+  try {
+    const response = await fetch('/api/post-study-responses', {
+      method: 'GET',
+    });
 
-  if (!response.ok) {
-    const errorBody = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(errorBody?.error || 'Failed to fetch post-study responses from blob storage');
+    if (!response.ok) {
+      throw new Error('Post-study blob endpoint returned non-OK status');
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.toLowerCase().includes('application/json')) {
+      throw new Error('Post-study blob endpoint returned a non-JSON response');
+    }
+
+    const data = (await response.json()) as { responses?: PostStudyResponse[] };
+    return Array.isArray(data.responses) ? data.responses : [];
+  } catch {
+    return getStoredResponses();
   }
-
-  const data = (await response.json()) as { responses?: PostStudyResponse[] };
-  return Array.isArray(data.responses) ? data.responses : [];
 };
 
 export const fetchPromptHistories = async (): Promise<EditHistory[]> => {
-  const response = await fetch('/api/prompt-history', {
-    method: 'GET',
-  });
+  try {
+    const response = await fetch('/api/prompt-history', {
+      method: 'GET',
+    });
 
-  if (!response.ok) {
-    const errorBody = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(errorBody?.error || 'Failed to fetch prompt history from blob storage');
+    if (!response.ok) {
+      throw new Error('Prompt-history blob endpoint returned non-OK status');
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.toLowerCase().includes('application/json')) {
+      throw new Error('Prompt-history blob endpoint returned a non-JSON response');
+    }
+
+    const data = (await response.json()) as { history?: EditHistory[] };
+    return Array.isArray(data.history) ? data.history : [];
+  } catch {
+    return getStoredHistory();
   }
-
-  const data = (await response.json()) as { history?: EditHistory[] };
-  return Array.isArray(data.history) ? data.history : [];
 };
 
 const savePromptHistoryEntry = async (entry: EditHistory): Promise<void> => {
@@ -341,7 +413,6 @@ export const saveNewGeneration = async (
   history.push(newHistoryItem);
   safelySetItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
 
-  // Mirror prompt history in Vercel Blob for admin analytics.
   await savePromptHistoryEntry(newHistoryItem);
   
   return newHistoryItem;
