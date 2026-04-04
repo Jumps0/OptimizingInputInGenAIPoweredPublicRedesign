@@ -44,16 +44,24 @@ const PostStudyFormPage = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const hasAnsweredEveryQuestion = Object.values(responses).every((value) => value !== "");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
     setIsSubmitting(true);
-    savePostStudyResponse(user.id, responses);
-    setIsSubmitting(false);
-    setSubmitted(true);
+    setSubmitError(null);
+
+    try {
+      await savePostStudyResponse(user.id, responses);
+      setSubmitted(true);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Failed to submit responses. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -177,6 +185,12 @@ const PostStudyFormPage = () => {
             >
               {isSubmitting ? "Saving..." : "Submit Responses"}
             </button>
+
+            {submitError ? (
+              <p className="text-sm text-red-700" role="alert">
+                {submitError}
+              </p>
+            ) : null}
           </form>
         )}
       </div>

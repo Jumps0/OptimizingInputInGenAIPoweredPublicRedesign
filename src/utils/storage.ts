@@ -157,19 +157,30 @@ export const createNewUser = (username: string, method: string, isAdminUser: boo
   addUser(newUser);
 };
 
-export const savePostStudyResponse = (
+export const savePostStudyResponse = async (
   userId: number,
   responses: Record<string, string>
-): PostStudyResponse => {
-  const existing = getStoredResponses();
+): Promise<PostStudyResponse> => {
   const newResponse: PostStudyResponse = {
     id: Date.now(),
     userId,
     createdAt: new Date().toISOString(),
     responses,
   };
-  existing.push(newResponse);
-  localStorage.setItem(STORAGE_KEYS.RESPONSES, JSON.stringify(existing));
+
+  const response = await fetch('/api/post-study-responses', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(newResponse),
+  });
+
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(errorBody?.error || 'Failed to save post-study response to blob storage');
+  }
+
   return newResponse;
 };
 
