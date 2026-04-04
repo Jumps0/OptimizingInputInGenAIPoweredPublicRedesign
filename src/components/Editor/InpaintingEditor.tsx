@@ -82,7 +82,8 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
   // Drawing State
   const isDrawing = useRef(false);
   const [tool, setTool] = useState<'pen' | 'eraser' | 'pan'>('pen');
-  const [brushSize, setBrushSize] = useState(80);
+  const [brushSize, setBrushSize] = useState(140);
+  const [mergedMaskImage, setMergedMaskImage] = useState<HTMLCanvasElement | null>(null);
 
   // History
   const history = useHistory([]);
@@ -142,6 +143,48 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
       lastFittedImageRef.current = image;
     }
   }, [image]);
+
+  // Compose all strokes into one mask image so overlap does not increase opacity.
+  useEffect(() => {
+    if (!image || lines.length === 0) {
+      setMergedMaskImage(null);
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      setMergedMaskImage(null);
+      return;
+    }
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (const line of lines) {
+      if (line.points.length < 2) continue;
+
+      context.save();
+      context.globalCompositeOperation = line.tool === 'eraser' ? 'destination-out' : 'source-over';
+      context.strokeStyle = '#df4b26';
+      context.lineWidth = line.strokeWidth;
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+      context.beginPath();
+      context.moveTo(line.points[0], line.points[1]);
+
+      for (let i = 2; i < line.points.length; i += 2) {
+        context.lineTo(line.points[i], line.points[i + 1]);
+      }
+
+      context.stroke();
+      context.restore();
+    }
+
+    setMergedMaskImage(canvas);
+  }, [image, lines]);
 
   const handleMouseDown = (e: KonvaPointerEvent) => {
     if (tool === 'pan') return;
@@ -392,23 +435,27 @@ const InpaintingEditor = ({ prompt, onPromptChange, lines, onLinesChange, imageU
                   />
                 )}
               </Layer>
-              <Layer opacity={0.8}>
+              <Layer>
                 {/* Drawing Layer */}
-                {lines.map((line, i) => (
-                  <Line
-                    key={i}
-                    points={line.points}
-                    stroke="#df4b26"
-                    strokeWidth={line.strokeWidth}
-                    tension={0.5}
-                    lineCap="round"
-                    lineJoin="round"
-                    globalCompositeOperation={
-                      line.tool === 'eraser' ? 'destination-out' : 'source-over'
-                    }
-                    opacity={1}
-                  />
-                ))}
+                {mergedMaskImage ? (
+                  <KonvaImage image={mergedMaskImage} opacity={0.65} listening={false} />
+                ) : (
+                  lines.map((line, i) => (
+                    <Line
+                      key={i}
+                      points={line.points}
+                      stroke="#df4b26"
+                      strokeWidth={line.strokeWidth}
+                      tension={0.5}
+                      lineCap="round"
+                      lineJoin="round"
+                      globalCompositeOperation={
+                        line.tool === 'eraser' ? 'destination-out' : 'source-over'
+                      }
+                      opacity={0.65}
+                    />
+                  ))
+                )}
               </Layer>
             </Stage>
         </div>
