@@ -272,6 +272,7 @@ const AdminPage = () => {
                 <Database size={16} />
                 Prompts History
               </button>
+              {/*
               <button
                 onClick={() => setActiveTab('feedback')}
                 className={cn(
@@ -284,6 +285,7 @@ const AdminPage = () => {
                 <MessageSquareQuote size={16} />
                 Result feedback
               </button>
+              */}
             </div>
             
             <div className="flex items-center gap-3 w-full md:w-auto"> {/*Add User button*/}
