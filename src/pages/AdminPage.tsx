@@ -360,103 +360,7 @@ const AdminPage = () => {
                 );
               })()}
             </div>
-              {/*
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              {(() => {
-                const [isPyodideReady, setIsPyodideReady] = useState<boolean>(false);
-                const [loading, setLoading] = useState<boolean>(false);
-                const pyodideRef = useRef<PyodideInterface | null>(null);
-
-                useEffect(() => {
-                  const initializePyodide = async () => {
-                    try {
-                      const pyodide = await loadPyodide({
-                        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/" // https://pyodide.org/en/stable/usage/quickstart.html
-                      });
-                      
-                      await pyodide.loadPackage("micropip") // Install micropip first so we can actually use it
-                      pyodide.FS.writeFile('/home/pyodide/runflux.py', runflux);
-        
-                      // Install required packages using micropip
-                      // Note: This must be done BEFORE importing them in the script
-                      await pyodide.runPythonAsync(`
-                        import micropip
-
-                        # Install packages - this downloads and installs them from PyPI
-                        # Pillow (PIL) and requests are available as pure Python wheels
-                        await micropip.install('pillow')
-                        await micropip.install('requests')
-
-                        print("✓ Packages installed successfully")
-                      `);
-                      
-                      // Now write and import runflux.py
-                      pyodide.FS.writeFile('runflux.py', runflux);
-                      
-                      await pyodide.runPythonAsync(`
-                        import runflux
-
-                        # Store reference to the function
-                        testprint = runflux.testprint
-                        print("✓ Script loaded")
-                      `);
-
-                      pyodideRef.current = pyodide;
-                      setIsPyodideReady(true);
-                    } catch (error) {
-                      console.error('Failed to initialize Pyodide:', error);
-                    }
-                  };
-
-                  initializePyodide();
-                }, []);
-
-                const callPythonFunction = async (inputString: string): Promise<string | null> => {
-                  if (!pyodideRef.current) {
-                    console.error('Pyodide not ready');
-                    return null;
-                  }
-
-                  try {
-                    setLoading(true);
-                    const escapedInput = inputString.replace(/"/g, '\\"');
-      
-                    const result = pyodideRef.current.runPython(`
-                      import runflux
-                      result = runflux.testprint("${escapedInput}")
-                      result
-                    `);
-                    
-                    console.log(`Input: "${inputString}" → Output: "${result}"`);
-                    return result;
-                  } catch (error) {
-                    console.error('Error calling Python function:', error);
-                    return null;
-                  } finally {
-                    setLoading(false);
-                  }
-                };
-
-                const handleProcessString = async (): Promise<void> => {
-                  const testString = "Hello, world ";
-                  const result = await callPythonFunction(testString);
-                  console.log('Final result:', result);
-                };
-
-                return (
-                  <div>
-                    <button 
-                      onClick={handleProcessString}
-                      disabled={!isPyodideReady || loading}
-                    >
-                      (pytest)
-                    </button>
-                  </div>
-                );
-              }
-              )()}
-            </div>
-              */}
+              
             <div className="flex items-center gap-3 w-full md:w-auto"> {/*Search bar*/}
               {activeTab === 'prompts' && (
                 <div className="flex bg-gray-200/50 p-1 rounded-lg mr-2">
@@ -649,7 +553,7 @@ const AdminPage = () => {
                               <td className="p-4 align-top">
                                 <div className="flex items-center gap-2">
                                   <div className="w-6 h-6 rounded-full bg-e-100 text-e-600 flex items-center justify-center text-xs font-bold">
-                                    {item.userId.toString().charAt(0)}
+                                    {userNameById.get(item.userId)}
                                   </div>
                                   <span className="text-sm text-gray-600 font-mono">#{item.userId}</span>
                                 </div>
@@ -772,8 +676,8 @@ const AdminPage = () => {
                               <div className="p-4 flex-1 flex flex-col">
                                 <div className="flex items-start justify-between gap-2 mb-3">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full bg-e-50 text-e-600 flex items-center justify-center text-xs font-bold border border-e-100">
-                                      {item.userId.toString().charAt(0)}
+                                    <div className="rounded-full  bg-cyan-500 px-2 py-1 text-e-600 text-sm font-bold border">
+                                      {userNameById.get(item.userId)}
                                     </div>
                                     <span className="text-xs text-gray-500 font-medium">User #{item.userId}</span>
                                   </div>
