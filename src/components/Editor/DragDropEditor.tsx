@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Armchair, Trees, Droplets, Lightbulb, Trash2, Flower2, X } from 'lucide-react';
+import { Armchair, Trees, Droplets, Lightbulb, Trash2, Flower2, X, Flower, Route, Bike } from 'lucide-react';
 
 export interface DroppedElement {
   id: string;
@@ -21,9 +21,12 @@ const DRAGGABLE_ELEMENTS = [
   { id: 'bench', label: 'Bench', icon: Armchair },
   { id: 'tree', label: 'Tree', icon: Trees },
   { id: 'fountain', label: 'Fountain', icon: Droplets },
-  { id: 'lamp', label: 'Lamp', icon: Lightbulb },
-  { id: 'bin', label: 'Bin', icon: Trash2 },
+  { id: 'lamp', label: 'Street Lamp', icon: Lightbulb },
+  { id: 'bin', label: 'Trash can', icon: Trash2 },
   { id: 'flower', label: 'Flowerbed', icon: Flower2 },
+  { id: 'bush', label: 'Bush', icon: Flower },
+  { id: 'footpath', label: 'Footpath', icon: Route },
+  { id: 'bikepath', label: 'Bike Path', icon: Bike },
 ];
 
 const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChange, imageUrl }: DragDropEditorProps) => {
