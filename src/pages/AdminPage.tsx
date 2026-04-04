@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, /*useRef*/ } from 'react';
 import { useAuth } from '@/context';
 import {
   fetchUsers,
-  fetchEditHistory,
+  fetchPromptHistories,
   fetchPostStudyResponses,
   removeUser,
   renameUser,
@@ -50,7 +50,7 @@ const AdminPage = () => {
         await new Promise(resolve => setTimeout(resolve, 800));
         const [usersData, historyData, postStudyResponseData] = await Promise.all([
           fetchUsers(),
-          fetchEditHistory(),
+          fetchPromptHistories(),
           fetchPostStudyResponses(),
         ]);
         setUsers(usersData);

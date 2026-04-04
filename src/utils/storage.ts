@@ -198,6 +198,35 @@ export const fetchPostStudyResponses = async (): Promise<PostStudyResponse[]> =>
   return Array.isArray(data.responses) ? data.responses : [];
 };
 
+export const fetchPromptHistories = async (): Promise<EditHistory[]> => {
+  const response = await fetch('/api/prompt-history', {
+    method: 'GET',
+  });
+
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(errorBody?.error || 'Failed to fetch prompt history from blob storage');
+  }
+
+  const data = (await response.json()) as { history?: EditHistory[] };
+  return Array.isArray(data.history) ? data.history : [];
+};
+
+const savePromptHistoryEntry = async (entry: EditHistory): Promise<void> => {
+  const response = await fetch('/api/prompt-history', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(entry),
+  });
+
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(errorBody?.error || 'Failed to save prompt history to blob storage');
+  }
+};
+
 const safelySetItem = (key: string, value: string): boolean => {
   try {
     localStorage.setItem(key, value);
@@ -311,6 +340,9 @@ export const saveNewGeneration = async (
   // Save history with safety check
   history.push(newHistoryItem);
   safelySetItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+
+  // Mirror prompt history in Vercel Blob for admin analytics.
+  await savePromptHistoryEntry(newHistoryItem);
   
   return newHistoryItem;
 };
