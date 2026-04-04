@@ -184,6 +184,20 @@ export const savePostStudyResponse = async (
   return newResponse;
 };
 
+export const fetchPostStudyResponses = async (): Promise<PostStudyResponse[]> => {
+  const response = await fetch('/api/post-study-responses', {
+    method: 'GET',
+  });
+
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(errorBody?.error || 'Failed to fetch post-study responses from blob storage');
+  }
+
+  const data = (await response.json()) as { responses?: PostStudyResponse[] };
+  return Array.isArray(data.responses) ? data.responses : [];
+};
+
 const safelySetItem = (key: string, value: string): boolean => {
   try {
     localStorage.setItem(key, value);

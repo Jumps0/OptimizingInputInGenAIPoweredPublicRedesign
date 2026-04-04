@@ -48,6 +48,7 @@ const PostStudyFormPage = () => {
   const hasAnsweredEveryQuestion = Object.values(responses).every((value) => value !== "");
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log("Submitting responses...");
     e.preventDefault();
     if (!user) return;
 
@@ -56,6 +57,7 @@ const PostStudyFormPage = () => {
 
     try {
       await savePostStudyResponse(user.id, responses);
+      console.log("Responses saved successfully");
       setSubmitted(true);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Failed to submit responses. Please try again.");

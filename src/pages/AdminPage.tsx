@@ -3,13 +3,13 @@ import { useAuth } from '@/context';
 import {
   fetchUsers,
   fetchEditHistory,
-  fetchResultFeedbacks,
+  fetchPostStudyResponses,
   removeUser,
   renameUser,
   createNewUser,
   type User,
   type EditHistory,
-  type ResultFeedback
+  type PostStudyResponse
 } from '@/utils';
 import { 
   Shield, 
@@ -37,7 +37,7 @@ const AdminPage = () => {
   const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [history, setHistory] = useState<EditHistory[]>([]);
-  const [feedbacks, setFeedbacks] = useState<ResultFeedback[]>([]);
+  const [postStudyResponses, setPostStudyResponses] = useState<PostStudyResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'users' | 'prompts' | 'feedback'>('users');
@@ -48,15 +48,15 @@ const AdminPage = () => {
       try {
         // Simulate a slight delay for smoother loading experience
         await new Promise(resolve => setTimeout(resolve, 800));
-        const [usersData, historyData, feedbackData] = await Promise.all([
+        const [usersData, historyData, postStudyResponseData] = await Promise.all([
           fetchUsers(),
           fetchEditHistory(),
-          fetchResultFeedbacks(),
+          fetchPostStudyResponses(),
         ]);
         setUsers(usersData);
         setHistory(historyData);
-        setFeedbacks(
-          [...feedbackData].sort(
+        setPostStudyResponses(
+          [...postStudyResponseData].sort(
             (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           )
         );
@@ -127,16 +127,19 @@ const AdminPage = () => {
 
   const filteredFeedbacks = useMemo(() => {
     const q = searchTerm.toLowerCase();
-    return feedbacks.filter((f) => {
+    return postStudyResponses.filter((f) => {
       if (!q) return true;
+
+      const answers = Object.values(f.responses || {}).join(' ').toLowerCase();
+      const userName = (users.find((u) => u.id === f.userId)?.username || '').toLowerCase();
+
       return (
-        f.message.toLowerCase().includes(q) ||
-        f.prompt.toLowerCase().includes(q) ||
-        String(f.userId).includes(q) ||
-        (f.historyId != null && String(f.historyId).includes(q))
+        userName.includes(q) ||
+        answers.includes(q) ||
+        String(f.userId).includes(q)
       );
     });
-  }, [feedbacks, searchTerm]);
+  }, [postStudyResponses, searchTerm, users]);
 
   const userNameById = useMemo(() => {
     const m = new Map<number, string>();
@@ -272,7 +275,6 @@ const AdminPage = () => {
                 <Database size={16} />
                 Prompts History
               </button>
-              {/*
               <button
                 onClick={() => setActiveTab('feedback')}
                 className={cn(
@@ -283,9 +285,8 @@ const AdminPage = () => {
                 )}
               >
                 <MessageSquareQuote size={16} />
-                Result feedback
+                Post-Study Responses
               </button>
-              */}
             </div>
             
             <div className="flex items-center gap-3 w-full md:w-auto"> {/*Add User button*/}
@@ -816,10 +817,8 @@ const AdminPage = () => {
                       <tr className="border-b border-gray-100 bg-gray-50/50 text-xs uppercase tracking-wider text-gray-500 font-semibold">
                         <th className="p-4 w-[140px]">Submitted</th>
                         <th className="p-4 w-[160px]">User</th>
-                        <th className="p-4 w-[100px]">Round</th>
-                        <th className="p-4 w-[90px]">History ID</th>
-                        <th className="p-4 min-w-[180px]">Prompt</th>
-                        <th className="p-4 min-w-[240px]">Feedback</th>
+                        <th className="p-4 min-w-[180px]">Prior Experience</th>
+                        <th className="p-4 min-w-[240px]">Ratings</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -840,33 +839,35 @@ const AdminPage = () => {
                               </span>
                               <span className="block text-xs text-gray-500 font-mono">ID {f.userId}</span>
                             </td>
-                            <td className="p-4">
-                              <span className="inline-flex items-center px-2 py-1 rounded-md bg-emerald-50 text-emerald-800 text-xs font-semibold">
-                                Round {f.round}
-                              </span>
-                            </td>
-                            <td className="p-4 font-mono text-sm text-gray-600">
-                              {f.historyId ?? '—'}
-                            </td>
-                            <td className="p-4 max-w-xs">
-                              <p className="text-sm text-gray-700 line-clamp-4" title={f.prompt}>
-                                {f.prompt || '—'}
+                            <td className="p-4 max-w-sm">
+                              <p className="text-sm text-gray-700">
+                                Aware of AI: <span className="font-semibold text-gray-900">{f.responses.awareOfAI || '—'}</span>
+                              </p>
+                              <p className="text-sm text-gray-700 mt-1">
+                                Used AI Before: <span className="font-semibold text-gray-900">{f.responses.usedAI || '—'}</span>
                               </p>
                             </td>
                             <td className="p-4 max-w-md">
-                              <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">{f.message}</p>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-1 gap-x-4 text-sm text-gray-700">
+                                <span>Easy to use: <span className="font-semibold text-gray-900">{f.responses.easyToUse || '—'}</span></span>
+                                <span>Matched expectation: <span className="font-semibold text-gray-900">{f.responses.matchedExpectation || '—'}</span></span>
+                                <span>Felt control: <span className="font-semibold text-gray-900">{f.responses.feltControl || '—'}</span></span>
+                                <span>Understood intention: <span className="font-semibold text-gray-900">{f.responses.understoodIntention || '—'}</span></span>
+                                <span>Creative results: <span className="font-semibold text-gray-900">{f.responses.creativeResults || '—'}</span></span>
+                                <span>Overall satisfaction: <span className="font-semibold text-gray-900">{f.responses.overallSatisfaction || '—'}</span></span>
+                              </div>
                             </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={6} className="p-12 text-center">
+                          <td colSpan={4} className="p-12 text-center">
                             <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
                               <MessageSquareQuote className="text-gray-300" size={32} />
                             </div>
-                            <h3 className="text-lg font-medium text-gray-900">No feedback yet</h3>
+                            <h3 className="text-lg font-medium text-gray-900">No post-study responses yet</h3>
                             <p className="text-gray-500 mt-1 max-w-md mx-auto">
-                              Submissions from the editor result screen (Give feedback) will appear here.
+                              Responses submitted from the Post-Study form will appear here.
                             </p>
                           </td>
                         </tr>
@@ -892,7 +893,7 @@ const AdminPage = () => {
               </span>{' '}
               of{' '}
               <span className="font-medium text-gray-900">
-                {activeTab === 'users' ? users.length : activeTab === 'prompts' ? history.length : feedbacks.length}
+                {activeTab === 'users' ? users.length : activeTab === 'prompts' ? history.length : postStudyResponses.length}
               </span>{' '}
               results
             </span>
