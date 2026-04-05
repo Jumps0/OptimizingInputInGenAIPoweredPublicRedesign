@@ -71,6 +71,7 @@ export default async function handler(req, res) {
       access: 'public',
       contentType: 'application/json',
       addRandomSuffix: false,
+      allowOverwrite: true,
     });
 
     return res.status(201).json({ ok: true, users, blobUrl: blob.url, pathname: blob.pathname });
