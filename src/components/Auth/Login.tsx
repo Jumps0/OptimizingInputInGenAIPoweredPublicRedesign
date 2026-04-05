@@ -24,7 +24,7 @@ const Login = () => {
     if (success) {
       navigate('/editor');
     } else {
-      setError('Participant ID not found. Enter the provided anonymous identifier.');
+      setError('Participant ID not found. Enter the correct provided username.');
       setIsLoading(false);
     }
   };

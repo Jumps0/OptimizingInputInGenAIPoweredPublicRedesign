@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from 'react';
-import { fetchUsers, addUser } from '@/utils';
+import { addUser } from '@/utils';
 import type { User } from '@/utils';
 import { pickRandomAssignedMethod } from '@/utils/constants';
 import { AuthContext } from './useAuth';
@@ -36,30 +36,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       /** Admin accounts (navbar shows Admin + full dashboard). */
       const isAdminUser = lower === 'walid' || lower === 'shalah';
 
-      const users = await fetchUsers();
+      // Admin bypass
+      if (isAdminUser) {
+        const adminUser: User = {
+          id: Date.now(),
+          username: normalizedUsername,
+          assignedMethod: pickRandomAssignedMethod(),
+          role: 'admin',
+        };
+        addUser(adminUser);
+        setUser(adminUser);
+        localStorage.setItem('citizen_user', JSON.stringify(adminUser));
+        return true;
+      }
+
+      const usersResponse = await fetch('/api/users', { method: 'GET' });
+      if (!usersResponse.ok) {
+        throw new Error('Failed to reach users registry');
+      }
+
+      const usersPayload = (await usersResponse.json()) as { users?: User[] };
+      const users = Array.isArray(usersPayload.users) ? usersPayload.users : [];
       const foundUser = users.find(u => u.username.toLowerCase() === normalizedUsername.toLowerCase());
       
       if (foundUser) {
         const userToLogin: User = {
           ...foundUser,
-          role: isAdminUser ? 'admin' : (foundUser.role ?? 'user'),
+          role: foundUser.role ?? 'user',
         };
         setUser(userToLogin);
         localStorage.setItem('citizen_user', JSON.stringify(userToLogin));
         return true;
       }
 
-      // Allow easy access: create a new account on first login for any username.
-      const newUser: User = {
-        id: Date.now(),
-        username: normalizedUsername,
-        assignedMethod: pickRandomAssignedMethod(),
-        role: isAdminUser ? 'admin' : 'user',
-      };
-      addUser(newUser);
-      setUser(newUser);
-      localStorage.setItem('citizen_user', JSON.stringify(newUser));
-      return true;
+      // Non-admin users must already exist in blob registry.
+      return false;
     } catch (error) {
       console.error('Login error:', error);
       return false;
