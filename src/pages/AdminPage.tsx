@@ -50,7 +50,7 @@ const AdminPage = () => {
   const [selectedMethod, setSelectedMethod] = useState('0');
   const [isAdminSelection, setIsAdminSelection] = useState('no');
   const [deleteDialog, setDeleteDialog] = useState<null | {
-    kind: 'prompt' | 'response';
+    kind: 'prompt' | 'response' | 'user';
     id: number;
     blobPath?: string;
   }>(null);
@@ -171,9 +171,17 @@ const AdminPage = () => {
       if (deleteDialog.kind === 'prompt') {
         await deletePromptHistoryItem(deleteDialog.id, deleteDialog.blobPath);
         setHistory((prev) => prev.filter((item) => item.id !== deleteDialog.id));
-      } else {
+      } else if (deleteDialog.kind === 'response') {
         await deletePostStudyResponseItem(deleteDialog.id, deleteDialog.blobPath);
         setPostStudyResponses((prev) => prev.filter((item) => item.id !== deleteDialog.id));
+      } else {
+        const userToDelete = users.find((u) => u.id === deleteDialog.id);
+        if (!userToDelete) {
+          throw new Error('User not found.');
+        }
+
+        removeUser(userToDelete);
+        setUsers((prev) => prev.filter((u) => u.id !== deleteDialog.id));
       }
 
       setDeleteDialog(null);
@@ -537,7 +545,10 @@ const AdminPage = () => {
                                     >
                                     Rename User
                                     </button>
-                                  <button className="w-full text-left px-4 py-2 bg-red-600 text-sm text-gray-700 hover:bg-gray-50 rounded-lg hover:bg-red-700" onClick={() => {removeUser(user);window.location.reload()}}> {/*Remove User & Reload this window*/}
+                                  <button className="w-full text-left px-4 py-2 bg-red-600 text-sm text-gray-700 hover:bg-gray-50 rounded-lg hover:bg-red-700" onClick={() => {
+                                    setDeleteError(null);
+                                    setDeleteDialog({ kind: 'user', id: user.id });
+                                  }}> {/*Remove User & Reload this window*/}
                                     Remove User
                                   </button>
                                 </div>
@@ -891,7 +902,13 @@ const AdminPage = () => {
           <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900">Are you sure?</h3>
             <p className="mt-2 text-sm text-gray-600">
-              This will permanently remove this {deleteDialog.kind === 'prompt' ? 'prompt history entry' : 'post-study response'}.
+              This will permanently remove this {
+                deleteDialog.kind === 'prompt'
+                  ? 'prompt history entry'
+                  : deleteDialog.kind === 'response'
+                    ? 'post-study response'
+                    : 'user account'
+              }.
             </p>
             {deleteError ? (
               <p className="mt-2 text-sm text-red-700" role="alert">{deleteError}</p>
