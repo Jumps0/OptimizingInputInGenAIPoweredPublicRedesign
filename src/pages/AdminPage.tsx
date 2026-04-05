@@ -4,6 +4,8 @@ import {
   fetchUsers,
   fetchPromptHistories,
   fetchPostStudyResponses,
+  deletePromptHistoryItem,
+  deletePostStudyResponseItem,
   removeUser,
   renameUser,
   createNewUser,
@@ -27,7 +29,8 @@ import {
   LayoutGrid,
   List,
   ArrowRight,
-  MessageSquareQuote
+  MessageSquareQuote,
+  Trash2
 } from 'lucide-react';
 
 // Helper for conditional classes
@@ -42,6 +45,17 @@ const AdminPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'users' | 'prompts' | 'feedback'>('users');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [selectedMethod, setSelectedMethod] = useState('0');
+  const [isAdminSelection, setIsAdminSelection] = useState('no');
+  const [deleteDialog, setDeleteDialog] = useState<null | {
+    kind: 'prompt' | 'response';
+    id: number;
+    blobPath?: string;
+  }>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -146,6 +160,29 @@ const AdminPage = () => {
     users.forEach((u) => m.set(u.id, u.username));
     return m;
   }, [users]);
+
+  const confirmDelete = async () => {
+    if (!deleteDialog) return;
+
+    setDeleteError(null);
+    setIsDeleting(true);
+
+    try {
+      if (deleteDialog.kind === 'prompt') {
+        await deletePromptHistoryItem(deleteDialog.id, deleteDialog.blobPath);
+        setHistory((prev) => prev.filter((item) => item.id !== deleteDialog.id));
+      } else {
+        await deletePostStudyResponseItem(deleteDialog.id, deleteDialog.blobPath);
+        setPostStudyResponses((prev) => prev.filter((item) => item.id !== deleteDialog.id));
+      }
+
+      setDeleteDialog(null);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : 'Failed to delete item.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   if (!user || user.role !== 'admin') {
     return (
@@ -290,75 +327,75 @@ const AdminPage = () => {
             </div>
             
             <div className="flex items-center gap-3 w-full md:w-auto"> {/*Add User button*/}
-              {(() => {
-                const [showAddMenu, setShowAddMenu] = useState(false);
-                const [newUsername, setNewUsername] = useState('');
-                const [selectedMethod, setSelectedMethod] = useState("0");
+              {activeTab === 'users' && (
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowAddMenu(!showAddMenu)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-sm hover:shadow text-sm font-medium"
+                  >
+                    Add User
+                  </button>
 
-                return (
-                  <div className="relative">
-                    <button 
-                      onClick={() => setShowAddMenu(!showAddMenu)}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-sm hover:shadow text-sm font-medium"
-                    >
-                      Add User
-                    </button>
+                  {showAddMenu && (
+                    <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30 p-4 space-y-4">
+                      <input
+                        type="text"
+                        placeholder="New username"
+                        value={newUsername}
+                        onChange={(e) => setNewUsername(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 focus:outline-none"
+                      />
 
-                    {showAddMenu && (
-                      <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30 p-4 space-y-4">
-                        <input
-                          type="text"
-                          placeholder="New username"
-                          value={newUsername}
-                          onChange={(e) => setNewUsername(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 focus:outline-none"
-                        />
+                      <select
+                        value={selectedMethod}
+                        onChange={(e) => setSelectedMethod(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
+                      >
+                        <option value="0">Text</option>
+                        <option value="1">Voice</option>
+                        <option value="2">Inpainting</option>
+                        <option value="3">Drag-and-Drop</option>
+                      </select>
 
-                        <select
-                          value={selectedMethod}
-                          onChange={(e) => setSelectedMethod(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
+                      <select
+                        value={isAdminSelection}
+                        onChange={(e) => setIsAdminSelection(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
+                      >
+                        <option value="no">Role: User</option>
+                        <option value="yes">Role: Admin</option>
+                      </select>
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setShowAddMenu(false);
+                            setNewUsername('');
+                            setSelectedMethod('0');
+                            setIsAdminSelection('no');
+                          }}
+                          className="flex-1 px-3 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
                         >
-                          <option value="0">Text</option>
-                          <option value="1">Voice</option>
-                          <option value="2">Inpainting</option>
-                          <option value="3">Drag-and-Drop</option>
-                        </select>
-
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setShowAddMenu(false);
-                              setNewUsername('');
-                              setSelectedMethod("0");
-                            }}
-                            className="flex-1 px-3 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={() => {
-                              console.log(newUsername, selectedMethod);
-                              createNewUser(newUsername, selectedMethod, false);
-                              console.log(11);
-                              setShowAddMenu(false);
-                              console.log(12);
-                              setNewUsername('');
-                              console.log(13);
-                              setSelectedMethod(selectedMethod);
-                              console.log(14);
-                              window.location.reload();
-                            }}
-                            className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                          >
-                            Confirm
-                          </button>
-                        </div>
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => {
+                            createNewUser(newUsername, selectedMethod, isAdminSelection === 'yes');
+                            setShowAddMenu(false);
+                            setNewUsername('');
+                            setSelectedMethod('0');
+                            setIsAdminSelection('no');
+                            window.location.reload();
+                          }}
+                          className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                        >
+                          Confirm
+                        </button>
                       </div>
-                    )}
-                  </div>
-                );
-              })()}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
               
             <div className="flex items-center gap-3 w-full md:w-auto"> {/*Search bar*/}
@@ -605,15 +642,28 @@ const AdminPage = () => {
                                 </div>
                               </td>
                               <td className="p-4 text-right align-top">
-                                <a 
-                                  href={item.outputImage} 
-                                  target="_blank" 
-                                  rel="noreferrer" 
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-e-700 bg-e-50 hover:bg-e-100 rounded-md transition-colors"
-                                >
-                                  View Full
-                                  <ArrowUpRight size={12} />
-                                </a>
+                                <div className="inline-flex items-center gap-2">
+                                  <a 
+                                    href={item.outputImage} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-e-700 bg-e-50 hover:bg-e-100 rounded-md transition-colors"
+                                  >
+                                    View Full
+                                    <ArrowUpRight size={12} />
+                                  </a>
+                                  <button
+                                    onClick={() => setDeleteDialog({
+                                      kind: 'prompt',
+                                      id: item.id,
+                                      blobPath: item.blobPath,
+                                    })}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                                  >
+                                    <Trash2 size={12} />
+                                    Remove
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))
@@ -637,6 +687,19 @@ const AdminPage = () => {
                           {filteredHistory.map(item => (
                             <div key={item.id} className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col">
                               <div className="relative aspect-[2/1] bg-gray-100 flex">
+                                {/* Remove button for square view */}
+                                <button
+                                  onClick={() => setDeleteDialog({
+                                    kind: 'prompt',
+                                    id: item.id,
+                                    blobPath: item.blobPath,
+                                  })}
+                                  className="absolute top-33 z-30 inline-flex items-center gap-1 rounded-md bg-e-600/90 px-2 py-1 text-[10px] font-semibold text-white hover:bg-e-700/90"
+                                  title="Remove this prompt history item"
+                                >
+                                  <Trash2 size={10} />
+                                  Remove
+                                </button>
                                 <div className="flex-1 relative border-r border-white/20 group/input">
                                   {item.inputImage ? (
                                     <>
@@ -653,7 +716,7 @@ const AdminPage = () => {
                                   ) : (
                                     <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">N/A</div>
                                   )}
-                                  <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded-full pointer-events-none z-20">
+                                  <div className="absolute top-2 left-2 bg-e-600/90 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded-full pointer-events-none z-20">
                                     Original
                                   </div>
                                 </div>
@@ -723,6 +786,7 @@ const AdminPage = () => {
                         <th className="p-4 w-[160px]">User</th>
                         <th className="p-4 min-w-[180px]">Prior Experience</th>
                         <th className="p-4 min-w-[240px]">Ratings</th>
+                        <th className="p-4 w-[120px] text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -761,11 +825,24 @@ const AdminPage = () => {
                                 <span>Overall satisfaction: <span className="font-semibold text-gray-900">{f.responses.overallSatisfaction || '—'}</span></span>
                               </div>
                             </td>
+                            <td className="p-4 text-right align-top">
+                              <button
+                                onClick={() => setDeleteDialog({
+                                  kind: 'response',
+                                  id: f.id,
+                                  blobPath: f.blobPath,
+                                })}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                              >
+                                <Trash2 size={12} />
+                                Remove
+                              </button>
+                            </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={4} className="p-12 text-center">
+                          <td colSpan={5} className="p-12 text-center">
                             <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
                               <MessageSquareQuote className="text-gray-300" size={32} />
                             </div>
@@ -808,6 +885,41 @@ const AdminPage = () => {
           </div>
         </div>
       </div>
+
+      {deleteDialog ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Are you sure?</h3>
+            <p className="mt-2 text-sm text-gray-600">
+              This will permanently remove this {deleteDialog.kind === 'prompt' ? 'prompt history entry' : 'post-study response'}.
+            </p>
+            {deleteError ? (
+              <p className="mt-2 text-sm text-red-700" role="alert">{deleteError}</p>
+            ) : null}
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                onClick={() => {
+                  if (!isDeleting) {
+                    setDeleteDialog(null);
+                    setDeleteError(null);
+                  }
+                }}
+                disabled={isDeleting}
+                className="px-3 py-2 rounded-md border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="px-3 py-2 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-60"
+              >
+                {isDeleting ? 'Deleting...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };

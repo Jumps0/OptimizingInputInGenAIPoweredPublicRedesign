@@ -262,6 +262,28 @@ export const fetchPostStudyResponses = async (): Promise<PostStudyResponse[]> =>
   }
 };
 
+export const deletePostStudyResponseItem = async (id: number, blobPath?: string): Promise<void> => {
+  const local = getStoredResponses();
+  const next = local.filter((item) => item.id !== id);
+  localStorage.setItem(STORAGE_KEYS.RESPONSES, JSON.stringify(next));
+
+  try {
+    const response = await fetch('/api/post-study-responses', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id, blobPath }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Post-study delete endpoint returned non-OK status');
+    }
+  } catch (error) {
+    console.warn('Failed to delete post-study item from blob. Local deletion succeeded.', error);
+  }
+};
+
 export const fetchPromptHistories = async (): Promise<EditHistory[]> => {
   try {
     const response = await fetch('/api/prompt-history', {
@@ -281,6 +303,28 @@ export const fetchPromptHistories = async (): Promise<EditHistory[]> => {
     return Array.isArray(data.history) ? data.history : [];
   } catch {
     return getStoredHistory();
+  }
+};
+
+export const deletePromptHistoryItem = async (id: number, blobPath?: string): Promise<void> => {
+  const local = getStoredHistory();
+  const next = local.filter((item) => item.id !== id);
+  localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(next));
+
+  try {
+    const response = await fetch('/api/prompt-history', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id, blobPath }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Prompt-history delete endpoint returned non-OK status');
+    }
+  } catch (error) {
+    console.warn('Failed to delete prompt-history item from blob. Local deletion succeeded.', error);
   }
 };
 

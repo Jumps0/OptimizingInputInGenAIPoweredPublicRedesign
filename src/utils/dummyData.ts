@@ -31,6 +31,7 @@ export interface EditHistory {
   timestamp: string;
   likes: number[]; // Array of user IDs who liked
   comments: Comment[];
+  blobPath?: string;
 }
 
 export interface PostStudyResponse {
@@ -38,6 +39,7 @@ export interface PostStudyResponse {
   userId: number;
   createdAt: string;
   responses: Record<string, string>;
+  blobPath?: string;
 }
 
 import {

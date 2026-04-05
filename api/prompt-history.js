@@ -1,10 +1,10 @@
-import { list, put } from '@vercel/blob';
+import { del, list, put } from '@vercel/blob';
 
 const PROMPT_HISTORY_PREFIX = 'oigaippr-blob/prompt-history/';
 
 const setCorsHeaders = (res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 };
 
@@ -15,8 +15,55 @@ export default async function handler(req, res) {
     return res.status(204).end();
   }
 
-  if (req.method !== 'POST' && req.method !== 'GET') {
+  if (req.method !== 'POST' && req.method !== 'GET' && req.method !== 'DELETE') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (req.method === 'DELETE') {
+    try {
+      const { blobPath, id } = req.body || {};
+      let pathToDelete = typeof blobPath === 'string' && blobPath.trim() ? blobPath.trim() : null;
+
+      if (!pathToDelete && Number.isFinite(id)) {
+        let cursor;
+        let hasMore = true;
+
+        while (hasMore && !pathToDelete) {
+          const page = await list({
+            prefix: PROMPT_HISTORY_PREFIX,
+            cursor,
+            limit: 1000,
+          });
+
+          for (const blob of page.blobs) {
+            const blobResponse = await fetch(blob.url, { method: 'GET' });
+            if (!blobResponse.ok) {
+              continue;
+            }
+
+            const payload = await blobResponse.json().catch(() => null);
+            if (payload && Number(payload.id) === Number(id)) {
+              pathToDelete = blob.pathname;
+              break;
+            }
+          }
+
+          hasMore = page.hasMore;
+          cursor = page.cursor;
+        }
+      }
+
+      if (!pathToDelete) {
+        return res.status(404).json({ error: 'Prompt history blob not found' });
+      }
+
+      await del(pathToDelete);
+      return res.status(200).json({ ok: true, deletedPath: pathToDelete });
+    } catch (error) {
+      return res.status(500).json({
+        error: error instanceof Error ? error.message : 'Failed to delete prompt history item',
+      });
+    }
   }
 
   if (req.method === 'GET') {
@@ -62,6 +109,7 @@ export default async function handler(req, res) {
                 timestamp: String(payload.timestamp || new Date().toISOString()),
                 likes: Array.isArray(payload.likes) ? payload.likes : [],
                 comments: Array.isArray(payload.comments) ? payload.comments : [],
+                blobPath: blob.pathname,
               };
             } catch {
               return null;
