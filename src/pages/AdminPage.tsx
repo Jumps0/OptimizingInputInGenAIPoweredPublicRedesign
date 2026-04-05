@@ -36,6 +36,25 @@ import {
 // Helper for conditional classes
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(' ');
 
+type MethodFilterState = {
+  text: boolean;
+  voice: boolean;
+  inpainting: boolean;
+  dragdrop: boolean;
+};
+
+const defaultMethodFilters: MethodFilterState = {
+  text: true,
+  voice: true,
+  inpainting: true,
+  dragdrop: true,
+};
+
+const csvEscape = (value: unknown) => {
+  const normalized = String(value ?? '').replace(/\r?\n|\r/g, ' ');
+  return `"${normalized.replace(/"/g, '""')}"`;
+};
+
 const AdminPage = () => {
   const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
@@ -56,6 +75,8 @@ const AdminPage = () => {
   }>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [methodFilters, setMethodFilters] = useState<MethodFilterState>(defaultMethodFilters);
 
   useEffect(() => {
     const loadData = async () => {
@@ -127,39 +148,179 @@ const AdminPage = () => {
     ];
   }, [users, history]);
 
-  const filteredUsers = useMemo(() => 
-    users.filter(u => 
-      u.username.toLowerCase().includes(searchTerm.toLowerCase())
-    ),
-  [users, searchTerm]);
-
-  const filteredHistory = useMemo(() => 
-    history.filter(h => 
-      h.prompt.toLowerCase().includes(searchTerm.toLowerCase())
-    ),
-  [history, searchTerm]);
-
-  const filteredFeedbacks = useMemo(() => {
-    const q = searchTerm.toLowerCase();
-    return postStudyResponses.filter((f) => {
-      if (!q) return true;
-
-      const answers = Object.values(f.responses || {}).join(' ').toLowerCase();
-      const userName = (users.find((u) => u.id === f.userId)?.username || '').toLowerCase();
-
-      return (
-        userName.includes(q) ||
-        answers.includes(q) ||
-        String(f.userId).includes(q)
-      );
-    });
-  }, [postStudyResponses, searchTerm, users]);
+  if(false)console.log(stats); // Warning remover
 
   const userNameById = useMemo(() => {
     const m = new Map<number, string>();
     users.forEach((u) => m.set(u.id, u.username));
     return m;
   }, [users]);
+
+  const userMethodById = useMemo(() => {
+    const m = new Map<number, keyof MethodFilterState>();
+    users.forEach((u) => {
+      m.set(u.id, (u.assignedMethod || 'text') as keyof MethodFilterState);
+    });
+    return m;
+  }, [users]);
+
+  const filteredUsers = useMemo(() =>
+    users.filter((u) => {
+      const methodKey = (u.assignedMethod || 'text') as keyof MethodFilterState;
+      if (!methodFilters[methodKey]) return false;
+
+      const q = searchTerm.toLowerCase().trim();
+      if (!q) return true;
+
+      return [u.username, String(u.id), u.role, u.assignedMethod]
+        .some((field) => field.toLowerCase().includes(q));
+    }),
+  [users, searchTerm, methodFilters]);
+
+  const filteredHistory = useMemo(() =>
+    history.filter((h) => {
+      const methodForEntry = userMethodById.get(h.userId);
+      if (methodForEntry && !methodFilters[methodForEntry]) return false;
+
+      const q = searchTerm.toLowerCase().trim();
+      if (!q) return true;
+
+      const date = new Date(h.timestamp);
+      return [
+        h.prompt,
+        userNameById.get(h.userId) || '',
+        String(h.userId),
+        String(h.id),
+        date.toLocaleDateString(),
+        date.toLocaleTimeString(),
+      ].some((field) => field.toLowerCase().includes(q));
+    }),
+  [history, searchTerm, userNameById, userMethodById, methodFilters]);
+
+  const filteredFeedbacks = useMemo(() => {
+    const q = searchTerm.toLowerCase().trim();
+    return postStudyResponses.filter((f) => {
+      const methodForEntry = userMethodById.get(f.userId);
+      if (methodForEntry && !methodFilters[methodForEntry]) return false;
+      if (!q) return true;
+
+      const userName = userNameById.get(f.userId) || '';
+
+      return [
+        userName,
+        String(f.userId),
+        String(f.id),
+        f.responses.awareOfAI || '',
+        f.responses.usedAI || '',
+        f.responses.easyToUse || '',
+        f.responses.matchedExpectation || '',
+        f.responses.feltControl || '',
+        f.responses.understoodIntention || '',
+        f.responses.creativeResults || '',
+        f.responses.overallSatisfaction || '',
+      ].some((field) => field.toLowerCase().includes(q));
+    });
+  }, [postStudyResponses, searchTerm, userNameById, userMethodById, methodFilters]);
+
+  const toggleMethodFilter = (method: keyof MethodFilterState) => {
+    setMethodFilters((prev) => ({
+      ...prev,
+      [method]: !prev[method],
+    }));
+  };
+
+  const exportAdminReport = () => {
+    const promptsByUserId = history.reduce<Record<number, EditHistory[]>>((acc, item) => {
+      if (!acc[item.userId]) {
+        acc[item.userId] = [];
+      }
+      acc[item.userId].push(item);
+      return acc;
+    }, {});
+
+    const responsesByUserId = postStudyResponses.reduce<Record<number, PostStudyResponse[]>>((acc, item) => {
+      if (!acc[item.userId]) {
+        acc[item.userId] = [];
+      }
+      acc[item.userId].push(item);
+      return acc;
+    }, {});
+
+    const headers = [
+      'User ID',
+      'Username',
+      'Role',
+      'Assigned Method',
+      'Generation Count',
+      'Generation ID',
+      'Generation Timestamp',
+      'Prompt',
+      'Version',
+      'Input Image URL',
+      'Output Image URL',
+      'Survey ID',
+      'Survey Submitted At',
+      'Aware Of AI',
+      'Used AI Before',
+      'Easy To Use',
+      'Matched Expectation',
+      'Felt Control',
+      'Understood Intention',
+      'Creative Results',
+      'Overall Satisfaction',
+    ];
+
+    const rows = users.flatMap((u) => {
+      const userPrompts = promptsByUserId[u.id] || [];
+      const userResponses = responsesByUserId[u.id] || [];
+      const rowCount = Math.max(userPrompts.length, userResponses.length, 1);
+
+      return Array.from({ length: rowCount }, (_, index) => {
+        const generation = userPrompts[index];
+        const survey = userResponses[index];
+
+        return [
+          u.id,
+          u.username,
+          u.role,
+          u.assignedMethod,
+          userPrompts.length,
+          generation?.id ?? '',
+          generation?.timestamp ? new Date(generation.timestamp).toISOString() : '',
+          generation?.prompt ?? '',
+          generation?.version ?? '',
+          generation?.inputImage ?? '',
+          generation?.outputImage ?? '',
+          survey?.id ?? '',
+          survey?.createdAt ? new Date(survey.createdAt).toISOString() : '',
+          survey?.responses?.awareOfAI ?? '',
+          survey?.responses?.usedAI ?? '',
+          survey?.responses?.easyToUse ?? '',
+          survey?.responses?.matchedExpectation ?? '',
+          survey?.responses?.feltControl ?? '',
+          survey?.responses?.understoodIntention ?? '',
+          survey?.responses?.creativeResults ?? '',
+          survey?.responses?.overallSatisfaction ?? '',
+        ];
+      });
+    });
+
+    const csvContent = [
+      headers.map(csvEscape).join(','),
+      ...rows.map((row) => row.map(csvEscape).join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    anchor.href = url;
+    anchor.download = `admin-report-${stamp}.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+  };
 
   const confirmDelete = async () => {
     if (!deleteDialog) return;
@@ -240,11 +401,17 @@ const AdminPage = () => {
             </div>
             
             <div className="flex items-center gap-3">
+              {/*
               <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-md text-sm font-medium text-gray-600">
                 <Calendar size={14} />
                 <span>Last 30 Days</span>
               </div>
-              <button className="flex items-center gap-2 px-4 py-2 bg-e-600 text-white rounded-lg hover:bg-e-700 transition-all shadow-sm hover:shadow text-sm font-medium">
+              */}
+              <button
+                onClick={exportAdminReport}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 bg-e-600 text-black rounded-lg hover:bg-e-700 transition-all shadow-sm hover:shadow text-sm font-medium disabled:opacity-60"
+              >
                 <Download size={16} />
                 Export Report
               </button>
@@ -255,6 +422,7 @@ const AdminPage = () => {
 
       <div className="container mx-auto px-6 py-8 max-w-7xl space-y-8">
         {/* Stats Grid */}
+        {/*
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat, index) => (
             <div 
@@ -289,11 +457,11 @@ const AdminPage = () => {
             </div>
           ))}
         </div>
-
+        */}
         {/* Main Content Area */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-[600px] flex flex-col">
 
-          <div className="p-4 border-b border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4 bg-gray-50/50"> {/*Toolbar with Tabs & Search*/}
+          <div className="p-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50"> {/*Toolbar with Tabs & Search*/}
 
             <div className="flex bg-gray-200/50 p-1 rounded-lg"> {/*Tabs for Users, Prompts History, and Result Feedback*/}
               <button
@@ -406,7 +574,7 @@ const AdminPage = () => {
               )}
             </div>
               
-            <div className="flex items-center gap-3 w-full md:w-auto"> {/*Search bar*/}
+            <div className="flex items-center gap-3 w-full md:w-auto md:ml-auto"> {/*Search bar*/}
               {activeTab === 'prompts' && (
                 <div className="flex bg-gray-200/50 p-1 rounded-lg mr-2">
                   <button
@@ -435,19 +603,75 @@ const AdminPage = () => {
                   </button>
                 </div>
               )}
-              <div className="relative flex-1 md:w-64">
+              <div className="relative w-full md:w-80 shrink-0">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                 <input
                   type="text"
                   placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-e-500/20 focus:border-e-500 focus:outline-none transition-all"
+                  className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none transition-all"
                 />
               </div>
-              <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg border border-gray-200 bg-white">
-                <Filter size={16} />
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowFilterMenu((prev) => !prev)}
+                  className={cn(
+                    'p-2 rounded-lg border border-gray-200 bg-white transition-colors',
+                    showFilterMenu ? 'text-e-700 bg-e-50 border-e-200' : 'text-gray-500 hover:bg-gray-100'
+                  )}
+                  title="Search filters"
+                >
+                  <Filter size={16} />
+                </button>
+
+                {showFilterMenu ? (
+                  <div className="absolute right-0 mt-2 w-64 rounded-lg border border-gray-200 bg-white p-3 shadow-lg z-30">
+                    <div className="mb-2">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Input Types</span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={methodFilters.text}
+                          onChange={() => toggleMethodFilter('text')}
+                          className="h-4 w-4 rounded border-gray-300 text-e-600 focus:ring-e-500/30"
+                        />
+                        <span>Text</span>
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={methodFilters.voice}
+                          onChange={() => toggleMethodFilter('voice')}
+                          className="h-4 w-4 rounded border-gray-300 text-e-600 focus:ring-e-500/30"
+                        />
+                        <span>Voice</span>
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={methodFilters.inpainting}
+                          onChange={() => toggleMethodFilter('inpainting')}
+                          className="h-4 w-4 rounded border-gray-300 text-e-600 focus:ring-e-500/30"
+                        />
+                        <span>Inpainting</span>
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={methodFilters.dragdrop}
+                          onChange={() => toggleMethodFilter('dragdrop')}
+                          className="h-4 w-4 rounded border-gray-300 text-e-600 focus:ring-e-500/30"
+                        />
+                        <span>Drag&amp;Drop</span>
+                      </label>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
 
@@ -474,7 +698,7 @@ const AdminPage = () => {
                         <th className="p-4">User Details</th>
                         <th className="p-4">Role</th>
                         <th className="p-4">Method</th>
-                        <th className="p-4">Status</th>
+                        {/*<th className="p-4">Status</th>*/}
                         <th className="p-4 text-right">Actions</th>
                       </tr>
                     </thead>
@@ -523,11 +747,11 @@ const AdminPage = () => {
                                 </span>
                               </div>
                             </td>
-                            <td className="p-4"> {/*Active/In-active (Does nothing)*/}
+                            {/*<td className="p-4">
                               <span className="inline-flex items-center px-2 py-1 rounded-md bg-green-50 text-green-700 text-xs font-medium">
                                 Active
                               </span>
-                            </td>
+                            </td>*/}
                             <td className="p-4 text-right">
                               <div className="relative group">
                                 <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
@@ -705,7 +929,7 @@ const AdminPage = () => {
                                     id: item.id,
                                     blobPath: item.blobPath,
                                   })}
-                                  className="absolute top-33 z-30 inline-flex items-center gap-1 rounded-md bg-e-600/90 px-2 py-1 text-[10px] font-semibold text-white hover:bg-e-700/90"
+                                  className="absolute top-20 z-30 inline-flex items-center gap-1 rounded-md bg-e-600/90 px-2 py-1 text-[10px] font-semibold text-white hover:bg-e-700/90"
                                   title="Remove this prompt history item"
                                 >
                                   <Trash2 size={10} />
