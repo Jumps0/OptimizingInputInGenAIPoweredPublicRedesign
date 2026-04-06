@@ -85,15 +85,13 @@ const EditorPage = () => {
   const REQUEST_IMAGE_MAX_WIDTH = 1536;
   const REQUEST_IMAGE_JPEG_QUALITY = 0.8;
 
-  const fetchImageAsBase64 = async (imageUrl: string): Promise<string> => {
+  const getRequestImageDataUrl = async (imageUrl: string): Promise<string> => {
     try {
-      // Normalize any source (PNG/WEBP/HEIC-like browser output) to a capped JPEG payload for API requests.
-      const compressedDataUrl = await compressImage(imageUrl, REQUEST_IMAGE_MAX_WIDTH, REQUEST_IMAGE_JPEG_QUALITY);
-      return compressedDataUrl.split(',')[1] || '';
+      // Normalize any source to a capped JPEG payload for API requests.
+      return await compressImage(imageUrl, REQUEST_IMAGE_MAX_WIDTH, REQUEST_IMAGE_JPEG_QUALITY);
     } catch (compressionError) {
       console.warn('Compression failed, falling back to original image payload.', compressionError);
-      const dataUrl = await fetchImageAsDataUrl(imageUrl);
-      return dataUrl.split(',')[1] || '';
+      return fetchImageAsDataUrl(imageUrl);
     }
   };
 
@@ -284,7 +282,8 @@ const EditorPage = () => {
 
       //return await applySepiaFilter(previewUrl); // TEMP
       try {
-        const encodedImage = await fetchImageAsBase64(previewUrl);
+        let requestImageUrl = await getRequestImageDataUrl(previewUrl);
+        let encodedImage = requestImageUrl.split(',')[1] || '';
 
         // ================== //
         //  DETERMINE INPUTS  //
@@ -367,7 +366,7 @@ const EditorPage = () => {
           // - inpaintingLines (array of {x1, y1, x2, y2} objects representing the lines drawn by the user). Gonna need to parse this into a black & white image
           
           // Convert the lines to an actual mask. Remember: BLACK = NO CHANGE | WHITE = CHANGE
-          const mask = await applyInpaintingFilter(previewUrl, inpaintingLines);
+          const mask = await applyInpaintingFilter(requestImageUrl, inpaintingLines);
 
           // Generate!
           const inpaintResult = await bflInpainting(inputPrompt, encodedImage, mask);
@@ -412,7 +411,7 @@ const EditorPage = () => {
             .map((segment) => segment.trim())
             .filter(Boolean);
 
-          let currentImageUrl = previewUrl;
+          let currentImageUrl = requestImageUrl;
           let currentEncodedImage = encodedImage;
           let outputUrl: string | null = null;
 
@@ -454,13 +453,13 @@ const EditorPage = () => {
             console.log(`Sticker ${i + 1} applied.`);
             setResultImage(reusableOutputUrl);
             setPreviewUrl(reusableOutputUrl); // Update preview for next iteration
-            currentImageUrl = reusableOutputUrl;
-            currentEncodedImage = await fetchImageAsBase64(currentImageUrl);
+            currentImageUrl = await getRequestImageDataUrl(reusableOutputUrl);
+            currentEncodedImage = currentImageUrl.split(',')[1] || '';
             outputUrl = reusableOutputUrl;
           }
 
           console.log('Drag & drop generation successful.');
-          setPreviewUrl(encodedImage); // Reset preview to original "Before" image
+          setPreviewUrl(previewUrl); // Reset preview to original "Before" image
           setResultImage(outputUrl); // Set final "After" image
           return outputUrl;
         }
