@@ -17,6 +17,16 @@ interface DragDropEditorProps {
   imageUrl?: string | null;
 }
 
+interface PointerDragState {
+  pointerId: number;
+  pointerType: string;
+  type: string;
+  label: string;
+  elementId?: string;
+  clientX: number;
+  clientY: number;
+}
+
 const DRAGGABLE_ELEMENTS = [
   { id: 'bench', label: 'Bench', icon: Armchair },
   { id: 'tree', label: 'Tree', icon: Trees },
@@ -31,8 +41,7 @@ const DRAGGABLE_ELEMENTS = [
 
 const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChange, imageUrl }: DragDropEditorProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [draggedItem, setDraggedItem] = useState<{ type: string, label: string } | null>(null);
-  const [movingElementId, setMovingElementId] = useState<string | null>(null);
+  const [pointerDrag, setPointerDrag] = useState<PointerDragState | null>(null);
 
 
   // Update prompt whenever elements change
@@ -50,67 +59,160 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [placedElements]);
 
-  const handleDragStart = (e: React.DragEvent, type: string, label: string) => {
-    setDraggedItem({ type, label });
-    e.dataTransfer.setData('application/json', JSON.stringify({ type, label, isNew: true }));
-    e.dataTransfer.effectAllowed = 'copy';
+  const clearPointerDrag = () => {
+    setPointerDrag(null);
   };
 
-  const handleDragEnd = () => {
-    setDraggedItem(null);
-    setMovingElementId(null);
+  const createElementId = () => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+
+    return Math.random().toString(36).slice(2, 11);
   };
 
-  const handleElementDragStart = (e: React.DragEvent, id: string) => {
-    e.stopPropagation();
-    setMovingElementId(id);
-    e.dataTransfer.setData('application/json', JSON.stringify({ id, isNew: false }));
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = movingElementId ? 'move' : 'copy';
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (!containerRef.current) return;
+  const getDropPosition = (clientX: number, clientY: number) => {
+    if (!containerRef.current) return null;
 
     const rect = containerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const isInside = clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
 
-    // Clamp values between 0 and 100
-    const clampedX = Math.max(0, Math.min(100, x));
-    const clampedY = Math.max(0, Math.min(100, y));
-
-    try {
-      const data = JSON.parse(e.dataTransfer.getData('application/json'));
-
-      if (data.isNew) {
-        // Add new element
-        const newElement: DroppedElement = {
-          id: Math.random().toString(36).substr(2, 9),
-          type: data.type,
-          label: data.label,
-          x: clampedX,
-          y: clampedY
-        };
-        onElementsChange([...placedElements, newElement]);
-      } else {
-        // Move existing element
-        const updatedElements = placedElements.map(el => 
-          el.id === data.id ? { ...el, x: clampedX, y: clampedY } : el
-        );
-        onElementsChange(updatedElements);
-      }
-    } catch (err) {
-      console.error("Drop error", err);
+    if (!isInside) {
+      return null;
     }
-    
-    setDraggedItem(null);
-    setMovingElementId(null);
+
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+
+    return {
+      x: Math.max(0, Math.min(100, x)),
+      y: Math.max(0, Math.min(100, y)),
+    };
+  };
+
+  const commitPointerDrop = (clientX: number, clientY: number) => {
+    if (!pointerDrag) return;
+
+    const position = getDropPosition(clientX, clientY);
+    if (!position) {
+      clearPointerDrag();
+      return;
+    }
+
+    if (pointerDrag.elementId) {
+      const updatedElements = placedElements.map((element) =>
+        element.id === pointerDrag.elementId ? { ...element, x: position.x, y: position.y } : element
+      );
+      onElementsChange(updatedElements);
+    } else {
+      const newElement: DroppedElement = {
+        id: createElementId(),
+        type: pointerDrag.type,
+        label: pointerDrag.label,
+        x: position.x,
+        y: position.y,
+      };
+      onElementsChange([...placedElements, newElement]);
+    }
+
+    clearPointerDrag();
+  };
+
+  useEffect(() => {
+    if (!pointerDrag) return;
+
+    const previousUserSelect = document.body.style.userSelect;
+    const previousOverflow = document.body.style.overflow;
+
+    document.body.style.userSelect = 'none';
+    if (pointerDrag.pointerType === 'touch') {
+      document.body.style.overflow = 'hidden';
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (event.pointerId !== pointerDrag.pointerId) return;
+
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+
+      setPointerDrag((currentDrag) =>
+        currentDrag && currentDrag.pointerId === event.pointerId
+          ? { ...currentDrag, clientX: event.clientX, clientY: event.clientY }
+          : currentDrag
+      );
+    };
+
+    const handlePointerUp = (event: PointerEvent) => {
+      if (event.pointerId !== pointerDrag.pointerId) return;
+
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+
+      commitPointerDrop(event.clientX, event.clientY);
+    };
+
+    const handlePointerCancel = (event: PointerEvent) => {
+      if (event.pointerId !== pointerDrag.pointerId) return;
+      clearPointerDrag();
+    };
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: false });
+    window.addEventListener('pointerup', handlePointerUp, { passive: false });
+    window.addEventListener('pointercancel', handlePointerCancel, { passive: false });
+
+    return () => {
+      document.body.style.userSelect = previousUserSelect;
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerCancel);
+    };
+  }, [pointerDrag, placedElements, onElementsChange]);
+
+  const handlePalettePointerDown = (e: React.PointerEvent, type: string, label: string) => {
+    if (e.button !== 0) return;
+
+    e.preventDefault();
+    setPointerDrag({
+      pointerId: e.pointerId,
+      pointerType: e.pointerType,
+      type,
+      label,
+      clientX: e.clientX,
+      clientY: e.clientY,
+    });
+  };
+
+  const handlePlacedElementPointerDown = (e: React.PointerEvent, element: DroppedElement) => {
+    if (e.button !== 0) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    setPointerDrag({
+      pointerId: e.pointerId,
+      pointerType: e.pointerType,
+      type: element.type,
+      label: element.label,
+      elementId: element.id,
+      clientX: e.clientX,
+      clientY: e.clientY,
+    });
+  };
+
+  const handleCanvasPointerMove = (e: React.PointerEvent) => {
+    if (!pointerDrag) return;
+
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+
+    setPointerDrag((currentDrag) =>
+      currentDrag
+        ? { ...currentDrag, clientX: e.clientX, clientY: e.clientY }
+        : currentDrag
+    );
   };
 
   const removeElement = (id: string) => {
@@ -122,6 +224,9 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
     return element ? element.icon : Armchair;
   };
 
+  const previewPosition = pointerDrag ? getDropPosition(pointerDrag.clientX, pointerDrag.clientY) : null;
+  const PreviewIcon = pointerDrag ? getIconComponent(pointerDrag.type) : null;
+
   return (
     <div className="flex flex-col h-full gap-4">
       {/* Canvas Area */}
@@ -129,9 +234,9 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
         {imageUrl ? (
           <div 
             ref={containerRef}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
+            onPointerMove={handleCanvasPointerMove}
             className="relative inline-block max-w-full max-h-[600px]"
+            style={{ touchAction: pointerDrag ? 'none' : 'auto' }}
           >
             <img 
               src={imageUrl} 
@@ -140,21 +245,28 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
             />
             
             {/* Overlay Grid (Optional, visible on drag) */}
-            {(draggedItem || movingElementId) && (
+            {pointerDrag && (
               <div className="absolute inset-0 bg-blue-500/10 border-2 border-blue-500 border-dashed z-10 pointer-events-none" />
+            )}
+
+            {pointerDrag && previewPosition && PreviewIcon && (
+              <div
+                className="absolute z-20 transform -translate-x-1/2 -translate-y-1/2 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-blue-300 pointer-events-none"
+                style={{ left: `${previewPosition.x}%`, top: `${previewPosition.y}%` }}
+              >
+                <PreviewIcon size={24} className="text-gray-800" />
+              </div>
             )}
 
             {/* Dropped Elements */}
             {placedElements.map((el) => {
               const Icon = getIconComponent(el.type);
-              const isMoving = movingElementId === el.id;
+              const isMoving = pointerDrag?.elementId === el.id;
               
               return (
                 <div
                   key={el.id}
-                  draggable
-                  onDragStart={(e) => handleElementDragStart(e, el.id)}
-                  onDragEnd={handleDragEnd}
+                  onPointerDown={(e) => handlePlacedElementPointerDown(e, el)}
                   className={`absolute transform -translate-x-1/2 -translate-y-1/2 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-gray-200 cursor-move group/item hover:scale-110 hover:z-50 transition-all
                     ${isMoving ? 'opacity-50' : 'opacity-100'}
                   `}
@@ -168,7 +280,7 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
                       e.stopPropagation();
                       removeElement(el.id);
                     }}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity hover:bg-red-600 shadow-sm"
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-100 sm:opacity-0 sm:group-hover/item:opacity-100 transition-opacity hover:bg-red-600 shadow-sm"
                   >
                     <X size={12} />
                   </button>
@@ -176,7 +288,7 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
               );
             })}
             
-            {placedElements.length === 0 && !draggedItem && (
+            {placedElements.length === 0 && !pointerDrag && (
                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                  <div className="bg-black/30 backdrop-blur-md text-white px-4 py-2 rounded-lg text-sm font-medium border border-white/20">
                    Drag elements here
@@ -198,10 +310,9 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
           {DRAGGABLE_ELEMENTS.map((element) => (
             <div
               key={element.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, element.id, element.label)}
-              onDragEnd={handleDragEnd}
+              onPointerDown={(e) => handlePalettePointerDown(e, element.id, element.label)}
               className="flex flex-col items-center justify-center p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-grab hover:bg-blue-50 hover:border-blue-200 hover:shadow-md transition-all active:cursor-grabbing group"
+              style={{ touchAction: 'none' }}
             >
               <div className="p-2 bg-white rounded-full mb-2 shadow-sm group-hover:scale-110 transition-transform">
                 <element.icon size={20} className="text-gray-700 group-hover:text-blue-600" />
