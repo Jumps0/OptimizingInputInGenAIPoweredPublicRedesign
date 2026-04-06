@@ -102,13 +102,12 @@ export default async function handler(req, res) {
                 id: Number(payload.id) || Date.now(),
                 projectId: Number(payload.projectId) || 0,
                 userId: Number(payload.userId),
+                username: String(payload.username || ''),
                 prompt: String(payload.prompt || ''),
                 inputImage: String(payload.inputImage || ''),
                 outputImage: String(payload.outputImage || ''),
                 version: Number(payload.version) || 1,
                 timestamp: String(payload.timestamp || new Date().toISOString()),
-                likes: Array.isArray(payload.likes) ? payload.likes : [],
-                comments: Array.isArray(payload.comments) ? payload.comments : [],
                 blobPath: blob.pathname,
               };
             } catch {
@@ -141,9 +140,8 @@ export default async function handler(req, res) {
 
     const payload = {
       ...entry,
+      username: String(entry.username || ''),
       timestamp,
-      likes: Array.isArray(entry.likes) ? entry.likes : [],
-      comments: Array.isArray(entry.comments) ? entry.comments : [],
     };
 
     const blob = await put(filePath, JSON.stringify(payload, null, 2), {

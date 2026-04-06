@@ -504,7 +504,7 @@ const EditorPage = () => {
           setResultImage(result);
 
           if (result && user) {
-            const saved = await saveNewGeneration(user.id, prompt, previewUrl, result);
+            const saved = await saveNewGeneration(user.id, user.username, prompt, previewUrl, result);
             hid = saved.id;
             console.log(`Generation saved with history ID: ${hid}`);
           }
@@ -526,7 +526,7 @@ const EditorPage = () => {
 
           let hid: number | null = null;
           if (user) {
-            const saved = await saveNewGeneration(user.id, prompt, previewUrl, previewUrl);
+            const saved = await saveNewGeneration(user.id, user.username, prompt, previewUrl, previewUrl);
             hid = saved.id;
           }
           setLastHistoryId(hid);

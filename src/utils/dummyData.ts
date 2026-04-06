@@ -13,24 +13,16 @@ export interface Project {
   createdAt: string;
 }
 
-export interface Comment {
-  id: number;
-  userId: number;
-  text: string;
-  timestamp: string;
-}
-
 export interface EditHistory {
   id: number;
   projectId: number;
   userId: number;
+  username: string;
   prompt: string;
   inputImage: string;
   outputImage: string;
   version: number;
   timestamp: string;
-  likes: number[]; // Array of user IDs who liked
-  comments: Comment[];
   blobPath?: string;
 }
 

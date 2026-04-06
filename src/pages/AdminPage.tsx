@@ -181,6 +181,12 @@ const AdminPage = () => {
     return m;
   }, [users]);
 
+  const getHistoryUserName = (entry: EditHistory) => {
+    const savedName = entry.username?.trim();
+    if (savedName) return savedName;
+    return userNameById.get(entry.userId) || `User #${entry.userId}`;
+  };
+
   const filteredUsers = useMemo(() =>
     users.filter((u) => {
       const methodKey = (u.assignedMethod || 'text') as keyof MethodFilterState;
@@ -205,7 +211,7 @@ const AdminPage = () => {
       const date = new Date(h.timestamp);
       return [
         h.prompt,
-        userNameById.get(h.userId) || '',
+        getHistoryUserName(h),
         String(h.userId),
         String(h.id),
         date.toLocaleDateString(),
@@ -837,6 +843,10 @@ const AdminPage = () => {
                       <tbody className="divide-y divide-gray-50">
                         {filteredHistory.length > 0 ? (
                           filteredHistory.map(item => (
+                            (() => {
+                              const historyUserName = getHistoryUserName(item);
+                              const userInitials = historyUserName.slice(0, 2).toUpperCase();
+                              return (
                             <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
                               <td className="p-4 align-top">
                                 <div className="flex flex-col">
@@ -852,9 +862,10 @@ const AdminPage = () => {
                               <td className="p-4 align-top">
                                 <div className="flex items-center gap-2">
                                   <div className="w-6 h-6 rounded-full bg-e-100 text-e-600 flex items-center justify-center text-xs font-bold">
-                                    {userNameById.get(item.userId)}
+                                    {userInitials}
                                   </div>
-                                  <span className="text-sm text-gray-600 font-mono"> #{item.userId}</span>
+                                  <span className="text-sm text-gray-700 font-medium">{historyUserName}</span>
+                                  <span className="text-sm text-gray-500 font-mono">#{item.userId}</span>
                                 </div>
                               </td>
                               <td className="p-4 max-w-md align-top">
@@ -928,6 +939,8 @@ const AdminPage = () => {
                                 </div>
                               </td>
                             </tr>
+                              );
+                            })()
                           ))
                         ) : (
                           <tr>
@@ -947,6 +960,9 @@ const AdminPage = () => {
                       {filteredHistory.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                           {filteredHistory.map(item => (
+                            (() => {
+                              const historyUserName = getHistoryUserName(item);
+                              return (
                             <div key={item.id} className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col">
                               <div className="relative aspect-[2/1] bg-gray-100 flex">
                                 {/* Remove button for square view */}
@@ -1002,7 +1018,7 @@ const AdminPage = () => {
                                 <div className="flex items-start justify-between gap-2 mb-3">
                                   <div className="flex items-center gap-2">
                                     <div className="rounded-full  bg-cyan-500 px-2 py-1 text-e-600 text-sm font-semibold border">
-                                      {userNameById.get(item.userId)}
+                                      {historyUserName}
                                     </div>
                                     <span className="text-xs text-gray-500 font-medium">User #{item.userId}</span>
                                   </div>
@@ -1027,6 +1043,8 @@ const AdminPage = () => {
                                 </div>
                               </div>
                             </div>
+                              );
+                            })()
                           ))}
                         </div>
                       ) : (

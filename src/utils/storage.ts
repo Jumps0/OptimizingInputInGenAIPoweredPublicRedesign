@@ -405,12 +405,14 @@ const toPersistentImageData = async (imageUrl: string): Promise<string> => {
 
 export const saveNewGeneration = async (
   userId: number,
+  username: string,
   prompt: string,
   inputImage: string,
   outputImage: string
 ): Promise<EditHistory> => {
   const projects = getStoredProjects();
   const history = getStoredHistory();
+  const normalizedUsername = username.trim() || `User #${userId}`;
 
   // Compress images before storage
   // Use a max width of 800px and 0.6 quality to keep size small
@@ -439,13 +441,12 @@ export const saveNewGeneration = async (
     id: newHistoryId,
     projectId: newProjectId,
     userId,
+    username: normalizedUsername,
     prompt,
     inputImage: persistentInputImage,
     outputImage: persistentOutputImage,
     version: 1,
     timestamp: new Date().toISOString(),
-    likes: [],
-    comments: []
   };
 
   // Save history with safety check
@@ -455,48 +456,4 @@ export const saveNewGeneration = async (
   await savePromptHistoryEntry(newHistoryItem);
   
   return newHistoryItem;
-};
-
-export const toggleLike = (historyId: number, userId: number) => {
-  const history = getStoredHistory();
-  const itemIndex = history.findIndex(h => h.id === historyId);
-  
-  if (itemIndex !== -1) {
-    const item = history[itemIndex];
-    if (!item.likes) item.likes = []; // Ensure array exists
-    
-    if (item.likes.includes(userId)) {
-      item.likes = item.likes.filter(id => id !== userId);
-    } else {
-      item.likes.push(userId);
-    }
-    
-    history[itemIndex] = item;
-    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
-    return item.likes; // Return updated likes
-  }
-  return [];
-};
-
-export const addComment = (historyId: number, userId: number, text: string) => {
-  const history = getStoredHistory();
-  const itemIndex = history.findIndex(h => h.id === historyId);
-  
-  if (itemIndex !== -1) {
-    const item = history[itemIndex];
-    if (!item.comments) item.comments = []; // Ensure array exists
-    
-    const newComment = {
-      id: Date.now(),
-      userId,
-      text,
-      timestamp: new Date().toISOString()
-    };
-    
-    item.comments.push(newComment);
-    history[itemIndex] = item;
-    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
-    return item.comments; // Return updated comments
-  }
-  return [];
 };
