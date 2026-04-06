@@ -165,40 +165,34 @@ export const addHistoryItem = (item: EditHistory) => {
   localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
 };
 
-export const addUser = (user: User) => { // Add new user to storage
+export const addUser = async (user: User): Promise<void> => { // Add new user to storage
   const users = getStoredUsers();
   users.push(user);
   localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-  syncUsersToBlob(users).catch((error) => {
-    console.warn('Blob user sync failed, continuing with local users only.', error);
-  });
+  await syncUsersToBlob(users);
 };
 
-export const removeUser = (user: User) => { // Remove user and associated data
+export const removeUser = async (user: User): Promise<void> => { // Remove user and associated data
   const users = getStoredUsers();
   const index = users.findIndex((u) => u.id === user.id);
   if (index !== -1) {
     users.splice(index, 1);
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-    syncUsersToBlob(users).catch((error) => {
-      console.warn('Blob user sync failed, continuing with local users only.', error);
-    });
+    await syncUsersToBlob(users);
   }
 };
 
-export const renameUser = (user: User, newName: string) => { // Rename specified user
+export const renameUser = async (user: User, newName: string): Promise<void> => { // Rename specified user
   const users = getStoredUsers();
   const index = users.findIndex((u) => u.id === user.id);
   if (index !== -1) {
     users[index].username = newName;
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-    syncUsersToBlob(users).catch((error) => {
-      console.warn('Blob user sync failed, continuing with local users only.', error);
-    });
+    await syncUsersToBlob(users);
   }
 };
 
-export const createNewUser = (username: string, method: string, isAdminUser: boolean) => {
+export const createNewUser = async (username: string, method: string, isAdminUser: boolean): Promise<User> => {
   if(username.length === 0) {username = `citizen${Date.now()}`;} // Fallback name if empty
 
   const newUser: User = {
@@ -210,7 +204,8 @@ export const createNewUser = (username: string, method: string, isAdminUser: boo
 
   console.log(method, Number(method), newUser.assignedMethod);
 
-  addUser(newUser);
+  await addUser(newUser);
+  return newUser;
 };
 
 export const savePostStudyResponse = async (

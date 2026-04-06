@@ -44,7 +44,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           assignedMethod: pickRandomAssignedMethod(),
           role: 'admin',
         };
-        addUser(adminUser);
+        try {
+          await addUser(adminUser);
+        } catch (error) {
+          console.warn('Failed to sync admin user to blob; continuing with local session.', error);
+        }
         setUser(adminUser);
         localStorage.setItem('citizen_user', JSON.stringify(adminUser));
         return true;

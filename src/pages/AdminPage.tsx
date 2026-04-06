@@ -341,7 +341,7 @@ const AdminPage = () => {
           throw new Error('User not found.');
         }
 
-        removeUser(userToDelete);
+        await removeUser(userToDelete);
         setUsers((prev) => prev.filter((u) => u.id !== deleteDialog.id));
       }
 
@@ -555,13 +555,17 @@ const AdminPage = () => {
                           Cancel
                         </button>
                         <button
-                          onClick={() => {
-                            createNewUser(newUsername, selectedMethod, isAdminSelection === 'yes');
-                            setShowAddMenu(false);
-                            setNewUsername('');
-                            setSelectedMethod('0');
-                            setIsAdminSelection('no');
-                            window.location.reload();
+                          onClick={async () => {
+                            try {
+                              const createdUser = await createNewUser(newUsername, selectedMethod, isAdminSelection === 'yes');
+                              setUsers((prev) => [...prev, createdUser]);
+                              setShowAddMenu(false);
+                              setNewUsername('');
+                              setSelectedMethod('0');
+                              setIsAdminSelection('no');
+                            } catch (error) {
+                              console.error('Failed to create user', error);
+                            }
                           }}
                           className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
                         >
@@ -759,11 +763,17 @@ const AdminPage = () => {
                                   <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
                                     <button 
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
-                                    onClick={() => {
+                                    onClick={async () => {
                                       const newName = prompt('Input new name for user');
                                       if (newName) {
-                                      renameUser(user, newName);
-                                      window.location.reload();
+                                        try {
+                                          await renameUser(user, newName);
+                                          setUsers((prev) =>
+                                            prev.map((u) => (u.id === user.id ? { ...u, username: newName } : u))
+                                          );
+                                        } catch (error) {
+                                          console.error('Failed to rename user', error);
+                                        }
                                       }
                                     }}
                                     >
