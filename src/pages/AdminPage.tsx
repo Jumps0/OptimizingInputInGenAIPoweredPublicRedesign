@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, /*useRef*/ } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/context';
 import {
   fetchUsers,
@@ -57,6 +58,7 @@ const csvEscape = (value: unknown) => {
 
 const AdminPage = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [users, setUsers] = useState<User[]>([]);
   const [history, setHistory] = useState<EditHistory[]>([]);
   const [postStudyResponses, setPostStudyResponses] = useState<PostStudyResponse[]>([]);
@@ -79,7 +81,11 @@ const AdminPage = () => {
   const [methodFilters, setMethodFilters] = useState<MethodFilterState>(defaultMethodFilters);
 
   useEffect(() => {
+    let isCancelled = false;
+
     const loadData = async () => {
+      setLoading(true);
+
       try {
         // Simulate a slight delay for smoother loading experience
         await new Promise(resolve => setTimeout(resolve, 800));
@@ -88,6 +94,9 @@ const AdminPage = () => {
           fetchPromptHistories(),
           fetchPostStudyResponses(),
         ]);
+
+        if (isCancelled) return;
+
         setUsers(usersData);
         setHistory(historyData);
         setPostStudyResponses(
@@ -96,14 +105,22 @@ const AdminPage = () => {
           )
         );
       } catch (error) {
-        console.error("Failed to load admin data", error);
+        if (!isCancelled) {
+          console.error("Failed to load admin data", error);
+        }
       } finally {
-        setLoading(false);
+        if (!isCancelled) {
+          setLoading(false);
+        }
       }
     };
 
     loadData();
-  }, []);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [location.key, location.pathname]);
 
   // Calculate stats
   const stats = useMemo(() => {
