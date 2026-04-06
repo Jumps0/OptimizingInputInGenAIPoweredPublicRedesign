@@ -9,7 +9,7 @@ import type { DroppedElement } from "@/components/Editor/DragDropEditor";
 import {  Sparkles, RotateCcw, /*Check, MessageSquareText, X*/ } from "lucide-react";
 import ComparisonSlider from "@/components/ComparisonSlider";
 import { METHODS } from "@/utils/constants";
-import { /*applySepiaFilter, */applyInpaintingFilter, applyDragDropMask, fetchImageAsDataUrl, getReusableImageUrl/*,applyDragDropFilter*/ } from "@/utils/imageUtils";
+import { /*applySepiaFilter, */applyInpaintingFilter, applyDragDropMask, compressImage, fetchImageAsDataUrl, getReusableImageUrl/*,applyDragDropFilter*/ } from "@/utils/imageUtils";
 
 // import SuggestionGallery from "@/components/SuggestionGallery";
 import {
@@ -82,9 +82,19 @@ const EditorPage = () => {
   };
 
 
+  const REQUEST_IMAGE_MAX_WIDTH = 1536;
+  const REQUEST_IMAGE_JPEG_QUALITY = 0.8;
+
   const fetchImageAsBase64 = async (imageUrl: string): Promise<string> => {
-    const dataUrl = await fetchImageAsDataUrl(imageUrl);
-    return dataUrl.split(',')[1] || '';
+    try {
+      // Normalize any source (PNG/WEBP/HEIC-like browser output) to a capped JPEG payload for API requests.
+      const compressedDataUrl = await compressImage(imageUrl, REQUEST_IMAGE_MAX_WIDTH, REQUEST_IMAGE_JPEG_QUALITY);
+      return compressedDataUrl.split(',')[1] || '';
+    } catch (compressionError) {
+      console.warn('Compression failed, falling back to original image payload.', compressionError);
+      const dataUrl = await fetchImageAsDataUrl(imageUrl);
+      return dataUrl.split(',')[1] || '';
+    }
   };
 
   const normalizeGeneratedImageUrl = (imageUrl: string | null | undefined) => {
