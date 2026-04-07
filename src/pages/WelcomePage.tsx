@@ -8,7 +8,7 @@ const WelcomePage = () => {
 	const methodCopy: Record<"text" | "voice" | "inpainting" | "dragdrop", { title: string; description: string }> = {
 		text: {
 			title: "Text Input",
-			description: "For your input method: Type a clear instruction that describes exactly what should change in the image.",
+			description: "For your input method: Type out a clear instruction that describes exactly what should change in the image.",
 		},
 		voice: {
 			title: "Voice Input",
@@ -32,7 +32,7 @@ const WelcomePage = () => {
 				<p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">
 					Welcome
 				</p>
-				<h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+				<h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-4xl">
 					Thank you for choosing to participate in our project. This page will give you instructions on how to use this web-app and what tasks you will be performing.
 				</h1>
 				<p className="text-base leading-7 text-slate-600">
@@ -63,7 +63,7 @@ const WelcomePage = () => {
 				<div className="mt-auto pt-6">
 					<Link
 						to="/editor"
-						className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+						className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-black transition-colors hover:bg-blue-700"
 					>
 						Continue to Editor
 						<ArrowRight className="h-4 w-4" />
