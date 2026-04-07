@@ -36,7 +36,7 @@ const WelcomePage = () => {
 					Thank you for choosing to participate in our project. This page will give you instructions on how to use this web-app and what tasks you will be performing.
 				</h1>
 				<p className="text-base leading-7 text-slate-600">
-					This web-app will allow you to take a photo with your camera of an open environment you want to change in some way. You will then be able to edit this photo using AI image generation through a specific instruction input.
+					This web-app will allow you to take a photo with your camera of an <span className="text-base leading-7 text-slate-600 font-semibold">open environment you want to change in some way.</span> You will then be able to edit this photo using AI image generation through a specific instruction input.
 				</p>
 
 				{assignedMethodCard && (
@@ -48,7 +48,7 @@ const WelcomePage = () => {
 
 				<p className="text-base leading-7 text-slate-600">
 					Once you have specified what you want changed on your input image, hit the "Generate" button. This process will take from 10 to 30 seconds. After the generation is done, you will be able to compare the generated image with your original input photo.
-					At this point you can choose to start over with the same initial image, continue refining the image with more edits, or finish and exit to the gallery.
+					At this point you can choose to start over with the same initial image, continue refining the image with more edits, or finish editing this image and exit to the gallery.
 				</p>
 
 				<div className="rounded-lg border border-orange-300 bg-orange-100/50 p-4">
@@ -63,7 +63,7 @@ const WelcomePage = () => {
 				<div className="mt-auto pt-6">
 					<Link
 						to="/editor"
-						className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-black transition-colors hover:bg-blue-700"
+						className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500/50 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-600/50"
 					>
 						Continue to Editor
 						<ArrowRight className="h-4 w-4" />
