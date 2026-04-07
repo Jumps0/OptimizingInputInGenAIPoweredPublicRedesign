@@ -28,10 +28,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  const login = async (username: string): Promise<boolean> => {
+  const login = async (username: string): Promise<User | null> => {
     try {
       const normalizedUsername = username.trim();
-      if (!normalizedUsername) return false;
+      if (!normalizedUsername) return null;
       const lower = normalizedUsername.toLowerCase();
       /** Admin accounts (navbar shows Admin + full dashboard). */
       const isAdminUser = lower === 'walid' || lower === 'shalah';
@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         setUser(adminUser);
         localStorage.setItem('citizen_user', JSON.stringify(adminUser));
-        return true;
+        return adminUser;
       }
 
       const usersResponse = await fetch('/api/users', { method: 'GET' });
@@ -70,14 +70,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
         setUser(userToLogin);
         localStorage.setItem('citizen_user', JSON.stringify(userToLogin));
-        return true;
+        return userToLogin;
       }
 
       // Non-admin users must already exist in blob registry.
-      return false;
+      return null;
     } catch (error) {
       console.error('Login error:', error);
-      return false;
+      return null;
     }
   };
 

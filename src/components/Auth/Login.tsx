@@ -20,9 +20,9 @@ const Login = () => {
     // Simulate a small delay for better UX feel
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    const success = await login(username);
-    if (success) {
-      navigate('/editor');
+    const loggedInUser = await login(username);
+    if (loggedInUser) {
+      navigate(loggedInUser.role === 'admin' ? '/editor' : '/welcome');
     } else {
       setError('Participant ID not found. Enter the correct provided username.');
       setIsLoading(false);

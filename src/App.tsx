@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import EditorPage from "./pages/EditorPage";
 import GalleryPage from "./pages/GalleryPage";
 import AdminPage from "./pages/AdminPage";
+import WelcomePage from "./pages/WelcomePage";
 // import PostStudyFormPage from "./pages/PostStudyFormPage";
 import Login from "./components/Auth/Login";
 import { AuthProvider, useAuth } from "./context";
@@ -10,6 +11,9 @@ import Layout from "./components/Layout";
 import "./App.css";
 import { useEffect, type JSX } from "react";
 import PostStudyFormPage from "./pages/PostStudyFormPage";
+
+const getDefaultAuthenticatedRoute = (role?: string) =>
+  role === "admin" ? "/editor" : "/welcome";
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { user, isLoading } = useAuth();
@@ -41,7 +45,7 @@ const PublicRoute = ({ children }: { children: JSX.Element }) => {
   }
 
   if (user) {
-    return <Navigate to="/editor" replace />;
+    return <Navigate to={getDefaultAuthenticatedRoute(user.role)} replace />;
   }
 
   return children;
@@ -129,8 +133,17 @@ function App() {
     <AuthProvider>
       <Router>
         <ScrollToTop />
+        <AppRoutes />
+      </Router>
+    </AuthProvider>
+  );
+}
 
-        <Routes>
+const AppRoutes = () => {
+  const { user } = useAuth();
+
+  return (
+    <Routes>
 
           {/* Public Routes */}
           <Route
@@ -149,7 +162,16 @@ function App() {
               path="/"
               element={
                 <ProtectedRoute>
-                  <Navigate to="/editor" replace />
+                  <Navigate to={getDefaultAuthenticatedRoute(user?.role)} replace />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/welcome"
+              element={
+                <ProtectedRoute>
+                  <WelcomePage />
                 </ProtectedRoute>
               }
             />
@@ -192,12 +214,13 @@ function App() {
 
           </Route>
 
-          <Route path="*" element={<Navigate to="/editor" replace />} />
+          <Route
+            path="*"
+            element={<Navigate to={getDefaultAuthenticatedRoute(user?.role)} replace />}
+          />
 
-        </Routes>
-      </Router>
-    </AuthProvider>
+    </Routes>
   );
-}
+};
 
 export default App;

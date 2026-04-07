@@ -3,7 +3,7 @@ import type { User } from '@/utils';
 
 export interface AuthContextType {
   user: User | null;
-  login: (username: string) => Promise<boolean>;
+  login: (username: string) => Promise<User | null>;
   logout: () => void;
   isLoading: boolean;
 }
