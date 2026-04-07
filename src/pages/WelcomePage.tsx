@@ -8,7 +8,7 @@ const WelcomePage = () => {
 	const methodCopy: Record<"text" | "voice" | "inpainting" | "dragdrop", { title: string; description: string }> = {
 		text: {
 			title: "Text Input",
-			description: "For your input method: Type out a clear instruction that describes exactly what should change in the image.",
+			description: "For your input method: Type out clear instruction that describes exactly what should change in the image.",
 		},
 		voice: {
 			title: "Voice Input",
@@ -36,7 +36,7 @@ const WelcomePage = () => {
 					Thank you for choosing to participate in our project. This page will give you instructions on how to use this web-app and what tasks you will be performing.
 				</h1>
 				<p className="text-base leading-7 text-slate-600">
-					This web-app will allow you to take a photo with your camera of an <span className="text-base leading-7 text-slate-600 font-semibold">open environment you want to change in some way.</span> You will then be able to edit this photo using AI image generation through a specific instruction input.
+					This web-app will allow you to take a photo with your camera of an <span className="text-base leading-7 text-slate-700 font-semibold">open environment you want to change in some way.</span> You will then be able to edit this photo using AI image generation through a specific instruction input.
 				</p>
 
 				{assignedMethodCard && (
@@ -63,7 +63,7 @@ const WelcomePage = () => {
 				<div className="mt-auto pt-6">
 					<Link
 						to="/editor"
-						className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500/50 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-600/50"
+						className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500/50 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-blue-600/50"
 					>
 						Continue to Editor
 						<ArrowRight className="h-4 w-4" />
