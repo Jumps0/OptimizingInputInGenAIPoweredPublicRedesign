@@ -46,6 +46,7 @@ const EditorPage = () => {
   const [resultSuggestions, setResultSuggestions] = useState<SuggestionItem[]>([]);
   const [realSuggestions, setRealSuggestions] = useState<SuggestionItem[]>([]);
   const [lastHistoryId, setLastHistoryId] = useState<number | null>(null);
+  const [refineBaseHistoryId, setRefineBaseHistoryId] = useState<number | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackThanks, setFeedbackThanks] = useState(false);
@@ -187,6 +188,7 @@ const EditorPage = () => {
   const handleImageSelect = (_file: File, url: string) => {
     setPreviewUrl(url);
     setSessionRound(1);
+    setRefineBaseHistoryId(null);
     setStep("editor");
   };
 
@@ -208,6 +210,7 @@ const EditorPage = () => {
       setResultSuggestions([]);
       setRealSuggestions([]);
       setLastHistoryId(null);
+      setRefineBaseHistoryId(null);
       setFeedbackOpen(false);
       setFeedbackText("");
       setFeedbackThanks(false);
@@ -504,7 +507,9 @@ const EditorPage = () => {
           setResultImage(result);
 
           if (result && user) {
-            const saved = await saveNewGeneration(user.id, user.username, prompt, previewUrl, result);
+            const saved = await saveNewGeneration(user.id, user.username, prompt, previewUrl, result, {
+              baseHistoryId: refineBaseHistoryId,
+            });
             hid = saved.id;
             console.log(`Generation saved with history ID: ${hid}`);
           }
@@ -512,6 +517,7 @@ const EditorPage = () => {
           
 
           setLastHistoryId(hid);
+          setRefineBaseHistoryId(null);
           setResultSuggestions(getRandomSuggestions(4));
           setRealSuggestions(getRandomInitialSuggestions(4));
 
@@ -526,10 +532,13 @@ const EditorPage = () => {
 
           let hid: number | null = null;
           if (user) {
-            const saved = await saveNewGeneration(user.id, user.username, prompt, previewUrl, previewUrl);
+            const saved = await saveNewGeneration(user.id, user.username, prompt, previewUrl, previewUrl, {
+              baseHistoryId: refineBaseHistoryId,
+            });
             hid = saved.id;
           }
           setLastHistoryId(hid);
+          setRefineBaseHistoryId(null);
           setResultSuggestions(getRandomSuggestions(4));
           setRealSuggestions(getRandomInitialSuggestions(4));
           setStep("result");
@@ -581,11 +590,11 @@ const EditorPage = () => {
 
   const handleRefineResult = () => {
     if (resultImage) {
+      setRefineBaseHistoryId(lastHistoryId);
       setPreviewUrl(resultImage);
       setSessionRound((r) => r + 1);
       setStep("editor");
       setResultImage(null);
-      setLastHistoryId(null);
       setFeedbackOpen(false);
       setFeedbackText("");
       setFeedbackThanks(false);
@@ -605,6 +614,7 @@ const EditorPage = () => {
 
   const handleRestart = () => {
     setSessionRound(1);
+    setRefineBaseHistoryId(null);
     setStep("editor");
     setResultImage(null);
     setLastHistoryId(null);

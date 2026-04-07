@@ -408,11 +408,19 @@ export const saveNewGeneration = async (
   username: string,
   prompt: string,
   inputImage: string,
-  outputImage: string
+  outputImage: string,
+  options?: {
+    baseHistoryId?: number | null;
+  }
 ): Promise<EditHistory> => {
   const projects = getStoredProjects();
   const history = getStoredHistory();
   const normalizedUsername = username.trim() || `User #${userId}`;
+  const baseHistoryId = options?.baseHistoryId ?? null;
+  const baseHistory =
+    Number.isFinite(baseHistoryId) && baseHistoryId !== null
+      ? history.find((h) => h.id === baseHistoryId && h.userId === userId)
+      : undefined;
 
   // Compress images before storage
   // Use a max width of 800px and 0.6 quality to keep size small
@@ -420,32 +428,40 @@ export const saveNewGeneration = async (
   
   const persistentOutputImage = await toPersistentImageData(outputImage);
 
-  // Create a new project for this generation
-  const newProjectId = projects.length > 0 ? Math.max(...projects.map(p => p.id)) + 1 : 1;
-  
-  const newProject: Project = {
-    id: newProjectId,
-    userId,
-    originalImage: persistentInputImage,
-    createdAt: new Date().toISOString()
-  };
-  
-  // Save project with safety check
-  projects.push(newProject);
-  safelySetItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
+  let projectId: number;
+  let version = 1;
+
+  if (baseHistory) {
+    projectId = baseHistory.projectId;
+    version = (Number(baseHistory.version) || 1) + 1;
+  } else {
+    // Create a new project for a brand new editing chain.
+    projectId = projects.length > 0 ? Math.max(...projects.map(p => p.id)) + 1 : 1;
+
+    const newProject: Project = {
+      id: projectId,
+      userId,
+      originalImage: persistentInputImage,
+      createdAt: new Date().toISOString()
+    };
+
+    // Save project with safety check
+    projects.push(newProject);
+    safelySetItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
+  }
 
   // Create history item
   const newHistoryId = history.length > 0 ? Math.max(...history.map(h => h.id)) + 1 : 1;
   
   const newHistoryItem: EditHistory = {
     id: newHistoryId,
-    projectId: newProjectId,
+    projectId,
     userId,
     username: normalizedUsername,
     prompt,
     inputImage: persistentInputImage,
     outputImage: persistentOutputImage,
-    version: 1,
+    version,
     timestamp: new Date().toISOString(),
   };
 
