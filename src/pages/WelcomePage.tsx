@@ -8,15 +8,15 @@ const WelcomePage = () => {
 	const methodCopy: Record<"text" | "voice" | "inpainting" | "dragdrop", { title: string; description: string }> = {
 		text: {
 			title: "Text Input",
-			description: "For your input method: Type out clear instruction that describes exactly what should change in the image.",
+			description: "For your input method: Type out clear instructions that describe exactly what should change in the image.",
 		},
 		voice: {
 			title: "Voice Input",
-			description: "For your input method: Speak your edit request naturally, then review the transcription before generating.",
+			description: "For your input method: Speak your edit request naturally, then review the transcription before generating. Tap the button to start recording. Tap it again to stop recording.",
 		},
 		inpainting: {
 			title: "Inpainting Input",
-			description: "For your input method: Brush over the exact region with your finger to specify only where you want something changed. Then provide a clear instruction for the desired modification. You can erase, clear, or undo/redo your selection area if needed.",
+			description: "For your input method: Brush over the image with your finger to specify only where you want something changed. Then provide a clear instruction for the desired modification. You can erase, clear, or undo/redo your selection area if needed.",
 		},
 		dragdrop: {
 			title: "Drag-and-Drop Input",
