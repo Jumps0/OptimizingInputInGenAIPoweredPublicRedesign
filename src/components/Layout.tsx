@@ -6,11 +6,13 @@ const Layout = () => {
   const location = useLocation();
   const isEditorPage = location.pathname === "/editor";
   const isPostStudyPage = location.pathname === "/post-study-form";
+  const isWelcomePage = location.pathname === "/welcome";
+  const hideNavigationChrome = isPostStudyPage || isWelcomePage;
 
   return (
     <div className={`${isEditorPage ? "h-screen overflow-hidden" : "min-h-screen"} flex flex-col bg-white text-gray-900`}>
 
-      {!isPostStudyPage && (
+      {!hideNavigationChrome && (
         <>
           <div className="hidden md:block bg-white border-b border-gray-100">
             <Navbar />
