@@ -18,6 +18,7 @@ const ImageCapture = ({ onImageSelect }: ImageCaptureProps) => {
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const cropFrameRef = useRef<HTMLDivElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string>("");
@@ -118,8 +119,40 @@ const ImageCapture = ({ onImageSelect }: ImageCaptureProps) => {
       return;
     }
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    let sourceX = 0;
+    let sourceY = 0;
+    let sourceWidth = video.videoWidth;
+    let sourceHeight = video.videoHeight;
+
+    const cropFrame = cropFrameRef.current;
+    if (cropFrame) {
+      const videoRect = video.getBoundingClientRect();
+      const frameRect = cropFrame.getBoundingClientRect();
+
+      if (videoRect.width > 0 && videoRect.height > 0 && frameRect.width > 0 && frameRect.height > 0) {
+        const scale = Math.max(videoRect.width / video.videoWidth, videoRect.height / video.videoHeight);
+        const renderedVideoWidth = video.videoWidth * scale;
+        const renderedVideoHeight = video.videoHeight * scale;
+        const overflowX = (renderedVideoWidth - videoRect.width) / 2;
+        const overflowY = (renderedVideoHeight - videoRect.height) / 2;
+
+        const frameLeftInVideo = frameRect.left - videoRect.left;
+        const frameTopInVideo = frameRect.top - videoRect.top;
+
+        sourceX = (frameLeftInVideo + overflowX) / scale;
+        sourceY = (frameTopInVideo + overflowY) / scale;
+        sourceWidth = frameRect.width / scale;
+        sourceHeight = frameRect.height / scale;
+
+        sourceX = Math.max(0, Math.min(sourceX, video.videoWidth - 1));
+        sourceY = Math.max(0, Math.min(sourceY, video.videoHeight - 1));
+        sourceWidth = Math.max(1, Math.min(sourceWidth, video.videoWidth - sourceX));
+        sourceHeight = Math.max(1, Math.min(sourceHeight, video.videoHeight - sourceY));
+      }
+    }
+
+    canvas.width = Math.round(sourceWidth);
+    canvas.height = Math.round(sourceHeight);
 
     const context = canvas.getContext("2d");
     if (!context) return;
@@ -128,7 +161,7 @@ const ImageCapture = ({ onImageSelect }: ImageCaptureProps) => {
       context.translate(canvas.width, 0);
       context.scale(-1, 1);
     }
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    context.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height);
 
     canvas.toBlob(
       (blob) => {
@@ -220,7 +253,15 @@ const ImageCapture = ({ onImageSelect }: ImageCaptureProps) => {
             }}
           />
 
-          <div className="pointer-events-none absolute inset-6 rounded-xl border border-white/25 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] sm:inset-10" />
+          <div
+            className="pointer-events-none absolute inset-6 rounded-xl sm:inset-10"
+            style={{ boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.38)" }}
+          />
+
+          <div
+            ref={cropFrameRef}
+            className="pointer-events-none absolute inset-6 rounded-xl border border-white/25 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] sm:inset-10"
+          />
 
           <div className="pointer-events-none absolute left-4 top-1/2 hidden -translate-y-1/2 sm:block">
             <div className="h-16 w-px bg-gradient-to-b from-transparent via-white/40 to-transparent" />
