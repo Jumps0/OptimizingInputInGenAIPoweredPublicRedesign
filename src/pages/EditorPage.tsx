@@ -9,7 +9,7 @@ import type { DroppedElement } from "@/components/Editor/DragDropEditor";
 import {  Sparkles, RotateCcw, /*Check, MessageSquareText, X*/ } from "lucide-react";
 import ComparisonSlider from "@/components/ComparisonSlider";
 import { METHODS } from "@/utils/constants";
-import { /*applySepiaFilter, */applyInpaintingFilter, applyDragDropMask, compressImage, fetchImageAsDataUrl, getReusableImageUrl/*,applyDragDropFilter*/ } from "@/utils/imageUtils";
+import { applySepiaFilter, applyInpaintingFilter, applyDragDropMask, compressImage, fetchImageAsDataUrl, getReusableImageUrl/*,applyDragDropFilter*/ } from "@/utils/imageUtils";
 
 // import SuggestionGallery from "@/components/SuggestionGallery";
 import {
@@ -279,11 +279,15 @@ const EditorPage = () => {
     console.log("Starting process...");
     setIsGenerating(true);
 
-    // Initialize Pyodide and load the script
     const callImageGeneration = async (inputPrompt: string, previewUrl: string, _inpaintingLines: any[], _placedElements: any[]): Promise<string | null> => {
       console.log("...and running generation logic...");
 
-      //return await applySepiaFilter(previewUrl); // TEMP
+      // TEMP TESTING CHANGE
+      const reusableOutputUrl = normalizeGeneratedImageUrl(await applySepiaFilter(previewUrl));
+      console.log('Generation successful.');
+      setResultImage(reusableOutputUrl);
+      return reusableOutputUrl;
+
       try {
         let requestImageUrl = await getRequestImageDataUrl(previewUrl);
         let encodedImage = requestImageUrl.split(',')[1] || '';
@@ -447,7 +451,7 @@ const EditorPage = () => {
               return null;
             }
 
-            const reusableOutputUrl = normalizeGeneratedImageUrl(outputUrl);
+            const reusableOutputUrl = "";//normalizeGeneratedImageUrl(outputUrl);
             if (!reusableOutputUrl) {
               console.error('BFL proxy output URL could not be normalized:', pollResult);
               return null;
