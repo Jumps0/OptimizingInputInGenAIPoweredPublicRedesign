@@ -36,24 +36,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       /** Admin accounts (navbar shows Admin + full dashboard). */
       const isAdminUser = lower === 'walid' || lower === 'shalah';
 
-      // Admin bypass
-      if (isAdminUser) {
-        const adminUser: User = {
-          id: Date.now(),
-          username: normalizedUsername,
-          assignedMethod: pickRandomAssignedMethod(),
-          role: 'admin',
-        };
-        try {
-          await addUser(adminUser);
-        } catch (error) {
-          console.warn('Failed to sync admin user to blob; continuing with local session.', error);
-        }
-        setUser(adminUser);
-        localStorage.setItem('citizen_user', JSON.stringify(adminUser));
-        return adminUser;
-      }
-
       const usersResponse = await fetch('/api/users', { method: 'GET' });
       if (!usersResponse.ok) {
         throw new Error('Failed to reach users registry');
@@ -61,7 +43,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const usersPayload = (await usersResponse.json()) as { users?: User[] };
       const users = Array.isArray(usersPayload.users) ? usersPayload.users : [];
-      const foundUser = users.find(u => u.username.toLowerCase() === normalizedUsername.toLowerCase());
+      const foundUser = users.find(u => u.username.toLowerCase() === lower);
+
+      // Admin bypass with fetch-first registry reconciliation.
+      if (isAdminUser) {
+        const adminUser: User = foundUser
+          ? {
+              ...foundUser,
+              role: 'admin',
+            }
+          : {
+              id: Date.now(),
+              username: lower,
+              assignedMethod: pickRandomAssignedMethod(),
+              role: 'admin',
+            };
+
+        try {
+          if (!foundUser || foundUser.role !== 'admin') {
+            await addUser(adminUser);
+          }
+        } catch (error) {
+          console.warn('Failed to sync admin user to blob; continuing with local session.', error);
+        }
+
+        setUser(adminUser);
+        localStorage.setItem('citizen_user', JSON.stringify(adminUser));
+        return adminUser;
+      }
       
       if (foundUser) {
         const userToLogin: User = {

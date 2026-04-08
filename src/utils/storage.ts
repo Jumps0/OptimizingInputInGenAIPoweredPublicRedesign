@@ -68,20 +68,34 @@ export const getStoredUsers = (): User[] => {
   return readStoredJson<User[]>(STORAGE_KEYS.USERS, INITIAL_USERS);
 };
 
-const syncUsersToBlob = async (users: User[]): Promise<void> => {
+type UsersApiResponse = {
+  users?: User[];
+  source?: 'blob' | 'empty';
+  error?: string;
+};
+
+type UserMutationPayload =
+  | { operation: 'upsert'; user: User }
+  | { operation: 'remove'; userId: number; username?: string }
+  | { operation: 'rename'; userId: number; newUsername: string };
+
+const mutateUsersInBlob = async (payload: UserMutationPayload): Promise<User[]> => {
   const response = await fetch('/api/users', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     keepalive: true,
-    body: JSON.stringify({ users }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
-    const errorBody = (await response.json().catch(() => null)) as { error?: string } | null;
+    const errorBody = (await response.json().catch(() => null)) as UsersApiResponse | null;
     throw new Error(errorBody?.error || 'Failed to sync users to blob storage');
   }
+
+  const data = (await response.json()) as UsersApiResponse;
+  return Array.isArray(data.users) ? data.users : [];
 };
 
 export const fetchUsersWithFallback = async (): Promise<User[]> => {
@@ -96,8 +110,13 @@ export const fetchUsersWithFallback = async (): Promise<User[]> => {
       throw new Error('Users blob endpoint returned non-OK status');
     }
 
-    const data = (await response.json()) as { users?: User[] };
+    const data = (await response.json()) as UsersApiResponse;
     const blobUsers = Array.isArray(data.users) ? data.users : [];
+
+    // Guard against accidental local clobbering when blob is temporarily empty.
+    if (data.source === 'empty' && localUsers.length > 0) {
+      return localUsers;
+    }
 
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(blobUsers));
     return blobUsers;
@@ -166,30 +185,34 @@ export const addHistoryItem = (item: EditHistory) => {
 };
 
 export const addUser = async (user: User): Promise<void> => { // Add new user to storage
-  const users = getStoredUsers();
-  users.push(user);
-  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-  await syncUsersToBlob(users);
+  const syncedUsers = await mutateUsersInBlob({
+    operation: 'upsert',
+    user,
+  });
+  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(syncedUsers));
 };
 
 export const removeUser = async (user: User): Promise<void> => { // Remove user and associated data
-  const users = getStoredUsers();
-  const index = users.findIndex((u) => u.id === user.id);
-  if (index !== -1) {
-    users.splice(index, 1);
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-    await syncUsersToBlob(users);
-  }
+  const syncedUsers = await mutateUsersInBlob({
+    operation: 'remove',
+    userId: user.id,
+    username: user.username,
+  });
+  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(syncedUsers));
 };
 
 export const renameUser = async (user: User, newName: string): Promise<void> => { // Rename specified user
-  const users = getStoredUsers();
-  const index = users.findIndex((u) => u.id === user.id);
-  if (index !== -1) {
-    users[index].username = newName;
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-    await syncUsersToBlob(users);
+  const normalizedName = newName.trim().toLowerCase();
+  if (!normalizedName) {
+    return;
   }
+
+  const syncedUsers = await mutateUsersInBlob({
+    operation: 'rename',
+    userId: user.id,
+    newUsername: normalizedName,
+  });
+  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(syncedUsers));
 };
 
 export const createNewUser = async (username: string, method: string, isAdminUser: boolean): Promise<User> => {
