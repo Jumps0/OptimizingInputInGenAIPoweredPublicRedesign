@@ -282,11 +282,12 @@ const EditorPage = () => {
     const callImageGeneration = async (inputPrompt: string, previewUrl: string, _inpaintingLines: any[], _placedElements: any[]): Promise<string | null> => {
       console.log("...and running generation logic...");
 
-      // TEMP TESTING CHANGE
-      const reusableOutputUrl = normalizeGeneratedImageUrl(await applySepiaFilter(previewUrl));
-      console.log('Generation successful.');
-      setResultImage(reusableOutputUrl);
-      return reusableOutputUrl;
+      if(false){ // Pop-out this code to disable AI image editing
+        const reusableOutputUrl = normalizeGeneratedImageUrl(await applySepiaFilter(previewUrl));
+        console.log('Generation successful.');
+        setResultImage(reusableOutputUrl);
+        return reusableOutputUrl;
+      }
 
       try {
         let requestImageUrl = await getRequestImageDataUrl(previewUrl);
@@ -451,7 +452,7 @@ const EditorPage = () => {
               return null;
             }
 
-            const reusableOutputUrl = "";//normalizeGeneratedImageUrl(outputUrl);
+            const reusableOutputUrl = normalizeGeneratedImageUrl(outputUrl);
             if (!reusableOutputUrl) {
               console.error('BFL proxy output URL could not be normalized:', pollResult);
               return null;
