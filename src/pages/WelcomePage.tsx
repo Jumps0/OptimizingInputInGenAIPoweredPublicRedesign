@@ -54,6 +54,7 @@ const WelcomePage = () => {
 				<div className="rounded-lg border border-orange-300 bg-orange-100/50 p-4">
 					<p className="text-sm font-semibold text-orange-900">Instructions</p>
 					<p className="mt-1 text-sm leading-6 text-orange-800">To complete your task, <span className="mt-1 text-sm font-semibold leading-6 text-orange-800">capture and edit four separate images.</span> Once you are finished, go to the gallery, and complete the 'post-use survey'.</p>
+					<p className="mt-1 text-sm leading-6 text-orange-800">You <span className="mt-1 text-sm font-semibold leading-6 text-orange-800">must</span> perform this study in the <span className="mt-1 text-sm font-semibold leading-6 text-orange-800">Teglgårds Plads </span>at Nordkraft in Aalborg.</p>
 				</div>
 
 				<p className="text-base leading-7 text-slate-600">
