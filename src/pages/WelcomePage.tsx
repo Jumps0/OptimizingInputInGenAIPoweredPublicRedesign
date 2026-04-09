@@ -8,19 +8,19 @@ const WelcomePage = () => {
 	const methodCopy: Record<"text" | "voice" | "inpainting" | "dragdrop", { title: string; description: string }> = {
 		text: {
 			title: "Text Input",
-			description: "For your input method: Type out clear instructions that describe exactly what should change in the image.",
+			description: "Type out clear instructions that describe exactly what should change in the image.",
 		},
 		voice: {
 			title: "Voice Input",
-			description: "For your input method: Speak your edit request naturally, then review the transcription before generating. Tap the button to start recording. Tap it again to stop recording.",
+			description: "Speak your edit request naturally, then review the transcription before generating. Tap the button to start recording. Tap it again to stop recording.",
 		},
 		inpainting: {
 			title: "Inpainting Input",
-			description: "For your input method: Brush over the image with your finger to specify only where you want something changed. Then provide a clear instruction for the desired modification. You can erase, clear, or undo/redo your selection area if needed.",
+			description: "Brush over the image with your finger to specify where you want something changed. Then provide a clear instruction for the desired modification. You can erase, clear, or undo/redo your selection area if needed.",
 		},
 		dragdrop: {
 			title: "Drag-and-Drop Input",
-			description: "For your input method: Using the provided 'stickers', drag them onto the image to apply the changes you want.",
+			description: "Using the provided 'stickers', drag them onto the image to apply the changes you want.",
 		},
 	};
 
@@ -41,14 +41,14 @@ const WelcomePage = () => {
 
 				{assignedMethodCard && (
 					<div className="rounded-lg border border-blue-300 bg-blue-100/50 p-4">
-						<p className="text-sm font-semibold text-blue-900">{assignedMethodCard.title}</p>
+						<p className="text-sm font-bold text-blue-900">{assignedMethodCard.title}</p>
 						<p className="mt-1 text-sm leading-6 text-blue-800">{assignedMethodCard.description}</p>
 					</div>
 				)}
 
 				<p className="text-base leading-7 text-slate-600">
-					Once you have specified what you want changed on your input image, hit the "Generate" button. This process will take from 10 to 30 seconds. After the generation is done, you will be able to compare the generated image with your original input photo.
-					At this point you can choose to start over with the same initial image, continue refining the image with more edits, or finish editing this image and exit to the gallery.
+					Once you have specified what you want changed on your input image, hit the <span className="text-base leading-7 text-slate-700 font-semibold">"Generate"</span> button. This process will take from <span className="text-base leading-7 text-slate-700 font-semibold">10 to 30 seconds</span>. After the generation is done, you will be able to compare the generated image with your original input photo.
+					At this point you can choose to start over with the same initial image, continue refining the image with more edits, or finish editing this image and <span className="text-base leading-7 text-slate-700 font-semibold">exit to the gallery.</span>
 				</p>
 
 				<div className="rounded-lg border border-orange-300 bg-orange-100/50 p-4">
