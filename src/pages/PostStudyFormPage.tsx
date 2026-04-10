@@ -185,7 +185,7 @@ const PostStudyFormPage = () => {
             </section>
 
             <section className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <label htmlFor="additionalComments" className="text-sm font-medium text-gray-800">
+              <label htmlFor="additionalComments" className="text-sm font-medium text-blue-800">
                 (Optional) Have any other comments or feedback? Leave it here.
               </label>
               <textarea

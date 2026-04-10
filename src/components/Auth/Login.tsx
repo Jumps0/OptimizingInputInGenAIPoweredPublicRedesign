@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/context';
 import { User, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 
@@ -9,24 +9,53 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const attemptedUrlLoginRef = useRef<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim()) return;
-    
+  const usernameFromQuery = useMemo(() => {
+    return searchParams.get('user')?.trim() ?? '';
+  }, [searchParams]);
+
+  const attemptLogin = async (targetUsername: string, withDelay: boolean) => {
+    const normalizedUsername = targetUsername.trim();
+    if (!normalizedUsername) return;
+
     setIsLoading(true);
     setError('');
 
-    // Simulate a small delay for better UX feel
-    await new Promise(resolve => setTimeout(resolve, 800));
+    if (withDelay) {
+      // Keep a slight delay only for manual submits to preserve existing UX feel.
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
 
-    const loggedInUser = await login(username);
+    const loggedInUser = await login(normalizedUsername);
     if (loggedInUser) {
       navigate(loggedInUser.role === 'admin' ? '/editor' : '/welcome');
-    } else {
-      setError('Participant ID not found. Enter the correct provided username.');
-      setIsLoading(false);
+      return;
     }
+
+    setError('Participant ID not found. Enter the correct provided username.');
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    if (!usernameFromQuery) {
+      attemptedUrlLoginRef.current = null;
+      return;
+    }
+
+    setUsername((prev) => prev || usernameFromQuery);
+
+    const normalizedQueryUser = usernameFromQuery.toLowerCase();
+    if (attemptedUrlLoginRef.current === normalizedQueryUser || isLoading) return;
+
+    attemptedUrlLoginRef.current = normalizedQueryUser;
+    void attemptLogin(usernameFromQuery, false);
+  }, [usernameFromQuery, isLoading]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await attemptLogin(username, true);
   };
 
   return (

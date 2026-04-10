@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import EditorPage from "./pages/EditorPage";
 import GalleryPage from "./pages/GalleryPage";
 import AdminPage from "./pages/AdminPage";
@@ -17,6 +17,7 @@ const getDefaultAuthenticatedRoute = (role?: string) =>
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { user, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -27,7 +28,7 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={`/login${location.search}`} replace />;
   }
 
   return children;
@@ -53,6 +54,7 @@ const PublicRoute = ({ children }: { children: JSX.Element }) => {
 
 const AdminRoute = ({ children }: { children: JSX.Element }) => {
   const { user, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -63,7 +65,7 @@ const AdminRoute = ({ children }: { children: JSX.Element }) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={`/login${location.search}`} replace />;
   }
 
   if (user.role !== "admin") {
