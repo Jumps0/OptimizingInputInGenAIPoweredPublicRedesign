@@ -31,7 +31,7 @@ const Navbar = () => {
 
   return (
     <nav
-      className="w-full px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] md:px-4"
+      className="w-full px-3 pt-1 pb-[max(0.1rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] md:px-4"
       aria-label="Main navigation"
     >
       <div className="max-w-6xl mx-auto my-3 sm:my-5 rounded-2xl sm:rounded-full border border-emerald-100/80 bg-white/90 backdrop-blur-xl shadow-[0_12px_30px_rgba(16,185,129,0.16)] px-2.5 py-2.5 sm:px-4 sm:py-3">

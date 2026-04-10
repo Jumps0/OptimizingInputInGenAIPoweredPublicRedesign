@@ -27,9 +27,9 @@ const BottomNav = () => {
       aria-label="Mobile navigation"
     >
       <div
-        className="px-3 pt-2"
+        className="px-3 pt-1"
         style={{
-          paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
+          paddingBottom: "max(0.1rem, env(safe-area-inset-bottom))",
         }}
       >
         <div className={`mx-auto ${isAdmin ? "grid grid-cols-4" : "grid grid-cols-3"} gap-2`}>

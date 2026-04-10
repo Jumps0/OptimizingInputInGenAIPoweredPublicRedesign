@@ -12,7 +12,7 @@ const WelcomePage = () => {
 		},
 		voice: {
 			title: "Voice Input",
-			description: "Speak your edit request naturally, then review the transcription before generating. Tap the button to start recording. Tap it again to stop recording.",
+			description: "Speak your edit request naturally. Tap the button to start recording. Tap it again to stop recording. Then review the transcription before generating. Transcript request can be reset by hitting the reset button. ",
 		},
 		inpainting: {
 			title: "Inpainting Input",
@@ -20,7 +20,7 @@ const WelcomePage = () => {
 		},
 		dragdrop: {
 			title: "Drag-and-Drop Input",
-			description: "Using the provided 'stickers', drag them onto the image to apply the changes you want.",
+			description: "Using the provided 'stickers', drag them onto the image to apply the changes you want. Stickers can also be removed by hitting the red 'X'.",
 		},
 	};
 
