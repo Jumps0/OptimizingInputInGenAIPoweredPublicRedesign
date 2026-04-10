@@ -201,7 +201,7 @@ const PostStudyFormPage = () => {
                   }
                   className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500"
                 />
-                I'm open to participanting in a follow-up interview about my experience.
+                I'm open to participating in a follow-up interview about my experience.
               </label>
               <p className="text-sm text-orange-600">
                 If you check this box we will reach out shortly to schedule an online meeting.
