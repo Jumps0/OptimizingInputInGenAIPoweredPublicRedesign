@@ -16,6 +16,7 @@ interface PostStudyResponses extends Record<string, string> {
   understoodIntention: RatingOption | "";
   creativeResults: RatingOption | "";
   overallSatisfaction: RatingOption | "";
+  additionalComments: string;
 }
 
 const yesNoOptions: YesNoOption[] = ["Yes", "No"];
@@ -41,11 +42,14 @@ const PostStudyFormPage = () => {
     understoodIntention: "",
     creativeResults: "",
     overallSatisfaction: "",
+    additionalComments: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const hasAnsweredEveryQuestion = Object.values(responses).every((value) => value !== "");
+  const hasAnsweredEveryQuestion = Object.entries(responses)
+    .filter(([key]) => key !== "additionalComments")
+    .every(([, value]) => value !== "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     console.log("Submitting responses...");
@@ -178,6 +182,25 @@ const PostStudyFormPage = () => {
                   </div>
                 </fieldset>
               ))}
+            </section>
+
+            <section className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <label htmlFor="additionalComments" className="text-sm font-medium text-gray-800">
+                (Optional) Have any other comments or feedback? Leave it here.
+              </label>
+              <textarea
+                id="additionalComments"
+                name="additionalComments"
+                rows={4}
+                value={responses.additionalComments}
+                onChange={(e) =>
+                  setResponses((prev) => ({
+                    ...prev,
+                    additionalComments: e.target.value,
+                  }))
+                }
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
+              />
             </section>
 
             <button

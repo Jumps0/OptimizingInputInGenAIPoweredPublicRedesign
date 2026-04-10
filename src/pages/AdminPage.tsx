@@ -241,6 +241,7 @@ const AdminPage = () => {
         f.responses.understoodIntention || '',
         f.responses.creativeResults || '',
         f.responses.overallSatisfaction || '',
+        f.responses.additionalComments || '',
       ].some((field) => field.toLowerCase().includes(q));
     });
   }, [postStudyResponses, searchTerm, userNameById, userMethodById, methodFilters]);
@@ -291,6 +292,7 @@ const AdminPage = () => {
       'Understood Intention',
       'Creative Results',
       'Overall Satisfaction',
+      'Additional Comments',
     ];
 
     const rows = users.flatMap((u) => {
@@ -324,6 +326,7 @@ const AdminPage = () => {
           survey?.responses?.understoodIntention ?? '',
           survey?.responses?.creativeResults ?? '',
           survey?.responses?.overallSatisfaction ?? '',
+          survey?.responses?.additionalComments ?? '',
         ];
       });
     });
@@ -1104,6 +1107,9 @@ const AdminPage = () => {
                                 <span>Creative results: <span className="font-semibold text-gray-900">{f.responses.creativeResults || '—'}</span></span>
                                 <span>Overall satisfaction: <span className="font-semibold text-gray-900">{f.responses.overallSatisfaction || '—'}</span></span>
                               </div>
+                              <p className="mt-2 text-sm text-gray-700">
+                                Additional comments: <span className="font-semibold text-gray-900">{f.responses.additionalComments || '—'}</span>
+                              </p>
                             </td>
                             <td className="p-4 text-right align-top">
                               <button
