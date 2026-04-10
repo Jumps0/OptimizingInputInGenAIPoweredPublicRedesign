@@ -16,6 +16,7 @@ interface PostStudyResponses extends Record<string, string> {
   understoodIntention: RatingOption | "";
   creativeResults: RatingOption | "";
   overallSatisfaction: RatingOption | "";
+  followUpInterview: YesNoOption;
   additionalComments: string;
 }
 
@@ -42,6 +43,7 @@ const PostStudyFormPage = () => {
     understoodIntention: "",
     creativeResults: "",
     overallSatisfaction: "",
+    followUpInterview: "No",
     additionalComments: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -185,7 +187,26 @@ const PostStudyFormPage = () => {
             </section>
 
             <section className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <label htmlFor="additionalComments" className="text-sm font-medium text-blue-800">
+              <h2 className="text-lg font-semibold text-gray-900">Additional Information</h2>
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  name="followUpInterview"
+                  checked={responses.followUpInterview === "Yes"}
+                  onChange={(e) =>
+                    setResponses((prev) => ({
+                      ...prev,
+                      followUpInterview: e.target.checked ? "Yes" : "No",
+                    }))
+                  }
+                  className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500"
+                />
+                I'm open to participanting in a follow-up interview about my experience.
+              </label>
+              <p className="text-sm text-orange-600">
+                If you check this box we will reach out shortly to schedule an online meeting.
+              </p>
+              <label htmlFor="additionalComments" className="text-sm font-medium text-blue-700">
                 (Optional) Have any other comments or feedback? Leave it here.
               </label>
               <textarea

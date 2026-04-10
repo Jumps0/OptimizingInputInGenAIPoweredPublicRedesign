@@ -241,6 +241,7 @@ const AdminPage = () => {
         f.responses.understoodIntention || '',
         f.responses.creativeResults || '',
         f.responses.overallSatisfaction || '',
+        f.responses.followUpInterview || '',
         f.responses.additionalComments || '',
       ].some((field) => field.toLowerCase().includes(q));
     });
@@ -292,6 +293,7 @@ const AdminPage = () => {
       'Understood Intention',
       'Creative Results',
       'Overall Satisfaction',
+      'Open To Follow-up Interview',
       'Additional Comments',
     ];
 
@@ -326,6 +328,7 @@ const AdminPage = () => {
           survey?.responses?.understoodIntention ?? '',
           survey?.responses?.creativeResults ?? '',
           survey?.responses?.overallSatisfaction ?? '',
+          survey?.responses?.followUpInterview ?? '',
           survey?.responses?.additionalComments ?? '',
         ];
       });
@@ -1108,6 +1111,9 @@ const AdminPage = () => {
                                 <span>Overall satisfaction: <span className="font-semibold text-gray-900">{f.responses.overallSatisfaction || '—'}</span></span>
                               </div>
                               <p className="mt-2 text-sm text-gray-700">
+                                Open to follow-up interview: <span className="font-semibold text-gray-900">{f.responses.followUpInterview || 'No'}</span>
+                              </p>
+                              <p className="mt-1 text-sm text-gray-700">
                                 Additional comments: <span className="font-semibold text-gray-900">{f.responses.additionalComments || '—'}</span>
                               </p>
                             </td>
