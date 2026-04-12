@@ -1027,7 +1027,7 @@ const EditorPage = () => {
 
       {/* Footer / Floating Action Bar - Fixed/Sticky */}
       {step !== "result" && (
-      <div className="fixed left-0 right-0 p-6 bg-gradient-to-t from-white via-white/95 to-transparent z-60 pointer-events-none bottom-[max(72px,env(safe-area-inset-bottom))] md:bottom-0">
+      <div>
         <div className="max-w-3xl mx-auto pointer-events-auto">
         {(() => {
           const canGenerate = (() => {
