@@ -1020,14 +1020,14 @@ const EditorPage = () => {
     <div className="h-full flex flex-col bg-gray-50 overflow-hidden">
       {/* Main Content - Scrollable */}
       <div className="flex-1 overflow-y-auto scroll-smooth">
-      <div className="max-w-3xl mx-auto px-1 py-1 pb-[calc(env(safe-area-inset-bottom)+6rem)] md:pb-4 min-h-full">
+      <div className="max-w-3xl mx-auto px-1 py-1 pb-[calc(env(safe-area-inset-bottom)+4rem)] md:pb-4 min-h-full">
         {step === "result" ? renderResult() : renderEditor()}
       </div>
       </div>
 
       {/* Footer / Floating Action Bar - Fixed/Sticky */}
       {step !== "result" && (
-      <div className="pb-[calc(env(safe-area-inset-bottom)+5.5rem)] md:pb-0">
+      <div className="pb-[calc(env(safe-area-inset-bottom)+3.5rem)] md:pb-0">
         <div className="max-w-3xl mx-auto pointer-events-auto">
         {(() => {
           const canGenerate = (() => {
