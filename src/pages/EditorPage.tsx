@@ -1020,7 +1020,7 @@ const EditorPage = () => {
     <div className="h-full flex flex-col bg-gray-50 overflow-hidden">
       {/* Main Content - Scrollable */}
       <div className="flex-1 overflow-y-auto scroll-smooth">
-      <div className="max-w-3xl mx-auto px-1 py-1 pb-[calc(env(safe-area-inset-bottom)+4rem)] md:pb-4 min-h-full">
+      <div className="max-w-3xl mx-auto px-1 py-1 pb-[calc(env(safe-area-inset-bottom)+2rem)] md:pb-4 min-h-full">
         {step === "result" ? renderResult() : renderEditor()}
       </div>
       </div>
