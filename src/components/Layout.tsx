@@ -10,7 +10,7 @@ const Layout = () => {
   const hideNavigationChrome = isPostStudyPage || isWelcomePage;
 
   return (
-    <div className={`${isEditorPage ? "h-screen overflow-hidden" : "min-h-screen"} flex flex-col bg-white text-gray-900`}>
+    <div className={`${isEditorPage ? "h-[100dvh] overflow-hidden" : "min-h-screen"} flex flex-col bg-white text-gray-900`}>
 
       {!hideNavigationChrome && (
         <>
