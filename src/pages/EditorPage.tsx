@@ -848,7 +848,7 @@ const EditorPage = () => {
           ) : (
             <div className="h-full min-h-[280px] sm:min-h-[360px] flex flex-col items-center justify-center gap-3 text-gray-500 bg-gray-50">
               <Loader2 size={28} className="animate-spin text-emerald-600" />
-              <p className="text-sm font-medium">Preparing first generated image...</p>
+              <p className="text-sm font-medium">Preparing first generated image... this usually takes 10-30 seconds.</p>
             </div>
           )}
         </div>
