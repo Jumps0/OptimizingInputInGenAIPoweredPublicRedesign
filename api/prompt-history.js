@@ -106,6 +106,12 @@ export default async function handler(req, res) {
                 prompt: String(payload.prompt || ''),
                 inputImage: String(payload.inputImage || ''),
                 outputImage: String(payload.outputImage || ''),
+                outputImages: Array.isArray(payload.outputImages)
+                  ? payload.outputImages.map((item) => String(item || '')).filter(Boolean)
+                  : undefined,
+                selectedOutputIndex: Number.isFinite(payload.selectedOutputIndex)
+                  ? Number(payload.selectedOutputIndex)
+                  : undefined,
                 version: Number(payload.version) || 1,
                 timestamp: String(payload.timestamp || new Date().toISOString()),
                 blobPath: blob.pathname,

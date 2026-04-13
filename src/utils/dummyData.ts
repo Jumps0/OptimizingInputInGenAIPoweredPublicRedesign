@@ -21,6 +21,8 @@ export interface EditHistory {
   prompt: string;
   inputImage: string;
   outputImage: string;
+  outputImages?: string[];
+  selectedOutputIndex?: number;
   version: number;
   timestamp: string;
   blobPath?: string;

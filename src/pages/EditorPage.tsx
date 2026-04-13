@@ -6,7 +6,7 @@ import { saveNewGeneration, addResultFeedback } from "@/utils";
 import { TextTool, VoiceTool, InpaintingTool, DragDropTool } from "@/components/Editor/Tools";
 import type { LineType } from "@/components/Editor/InpaintingEditor";
 import type { DroppedElement } from "@/components/Editor/DragDropEditor";
-import {  Sparkles, RotateCcw, /*Check, MessageSquareText, X*/ } from "lucide-react";
+import {  Sparkles, RotateCcw, CheckCircle2, Loader2, ImageOff, /*Check, MessageSquareText, X*/ } from "lucide-react";
 import ComparisonSlider from "@/components/ComparisonSlider";
 import { METHODS } from "@/utils/constants";
 import { applySepiaFilter, applyInpaintingFilter, applyDragDropMask, compressImage, fetchImageAsDataUrl, getReusableImageUrl/*,applyDragDropFilter*/ } from "@/utils/imageUtils";
@@ -21,6 +21,14 @@ import {
 
 type EditorStep = "upload" | "editor" | "result";
 type ToolType = "text" | "voice" | "inpainting" | "dragdrop";
+type VariantStatus = "loading" | "ready" | "error";
+
+type ResultVariant = {
+  imageUrl: string | null;
+  status: VariantStatus;
+};
+
+const OUTPUT_VARIANTS_COUNT = 3;
 
 const EditorPage = () => {
   const { user } = useAuth();
@@ -37,7 +45,9 @@ const EditorPage = () => {
 
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [resultImage, setResultImage] = useState<string | null>(null);
+  const [isSavingSelection, setIsSavingSelection] = useState(false);
+  const [resultVariants, setResultVariants] = useState<ResultVariant[]>([]);
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
 
   const [inpaintingLines, setInpaintingLines] = useState<LineType[]>([]);
   const [placedElements, setPlacedElements] = useState<DroppedElement[]>([]);
@@ -50,6 +60,10 @@ const EditorPage = () => {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackThanks, setFeedbackThanks] = useState(false);
+  const selectedResultImage =
+    resultVariants[selectedVariantIndex]?.imageUrl ||
+    resultVariants.find((variant) => variant.imageUrl)?.imageUrl ||
+    null;
 
   useEffect(() => {
     if (!user) return;
@@ -189,13 +203,16 @@ const EditorPage = () => {
     setPreviewUrl(url);
     setSessionRound(1);
     setRefineBaseHistoryId(null);
+    setResultVariants([]);
+    setSelectedVariantIndex(0);
     setStep("editor");
   };
 
   const handleBack = () => {
     if (step === "result") {
       setStep("editor");
-      setResultImage(null);
+      setResultVariants([]);
+      setSelectedVariantIndex(0);
       setLastHistoryId(null);
       setFeedbackOpen(false);
       setFeedbackText("");
@@ -207,6 +224,8 @@ const EditorPage = () => {
       setInpaintingLines([]);
       setPlacedElements([]);
       setSessionRound(1);
+      setResultVariants([]);
+      setSelectedVariantIndex(0);
       setResultSuggestions([]);
       setRealSuggestions([]);
       setLastHistoryId(null);
@@ -277,7 +296,15 @@ const EditorPage = () => {
 
   const handleGenerate = async () => {
     console.log("Starting process...");
+    if (!previewUrl) return;
+
     setIsGenerating(true);
+    setFeedbackOpen(false);
+    setFeedbackText("");
+    setFeedbackThanks(false);
+    setResultVariants(Array.from({ length: OUTPUT_VARIANTS_COUNT }, () => ({ imageUrl: null, status: "loading" as const })));
+    setSelectedVariantIndex(0);
+    setStep("result");
 
     const callImageGeneration = async (inputPrompt: string, previewUrl: string, _inpaintingLines: any[], _placedElements: any[]): Promise<string | null> => {
       console.log("...and running generation logic...");
@@ -285,7 +312,6 @@ const EditorPage = () => {
       if(false){ // Pop-out this code to disable AI image editing
         const reusableOutputUrl = normalizeGeneratedImageUrl(await applySepiaFilter(previewUrl));
         console.log('Generation successful.');
-        setResultImage(reusableOutputUrl);
         return reusableOutputUrl;
       }
 
@@ -329,7 +355,6 @@ const EditorPage = () => {
           }
 
           console.log('Generation successful.');
-          setResultImage(reusableOutputUrl);
           return reusableOutputUrl;
         }
         else if(activeTool === "voice"){
@@ -363,7 +388,6 @@ const EditorPage = () => {
           }
 
           console.log('Generation successful.');
-          setResultImage(reusableOutputUrl);
           return reusableOutputUrl;
         }
         else if(activeTool === "inpainting"){
@@ -374,7 +398,7 @@ const EditorPage = () => {
           // - inpaintingLines (array of {x1, y1, x2, y2} objects representing the lines drawn by the user). Gonna need to parse this into a black & white image
           
           // Convert the lines to an actual mask. Remember: BLACK = NO CHANGE | WHITE = CHANGE
-          const mask = await applyInpaintingFilter(requestImageUrl, inpaintingLines);
+          const mask = await applyInpaintingFilter(requestImageUrl, _inpaintingLines);
 
           // Generate!
           const inpaintResult = await bflInpainting(inputPrompt, encodedImage, mask);
@@ -402,7 +426,6 @@ const EditorPage = () => {
           }
 
           console.log('Generation successful.');
-          setResultImage(reusableOutputUrl);
           return reusableOutputUrl;
         }
         else if(activeTool === "dragdrop"){
@@ -459,16 +482,12 @@ const EditorPage = () => {
             }
 
             console.log(`Sticker ${i + 1} applied.`);
-            setResultImage(reusableOutputUrl);
-            setPreviewUrl(reusableOutputUrl); // Update preview for next iteration
             currentImageUrl = await getRequestImageDataUrl(reusableOutputUrl);
             currentEncodedImage = currentImageUrl.split(',')[1] || '';
             outputUrl = reusableOutputUrl;
           }
 
           console.log('Drag & drop generation successful.');
-          setPreviewUrl(previewUrl); // Reset preview to original "Before" image
-          setResultImage(outputUrl); // Set final "After" image
           return outputUrl;
         }
         else{
@@ -480,80 +499,66 @@ const EditorPage = () => {
       }
     };
 
-    const handleProcess = async (): Promise<void> => {
-      try {
-        if (previewUrl) {
-          // Loading screen appears here
+    try {
+      const generatedResults: Array<string | null> = Array.from({ length: OUTPUT_VARIANTS_COUNT }, () => null);
 
-          let hid: number | null = null;
+      await Promise.all(
+        Array.from({ length: OUTPUT_VARIANTS_COUNT }, async (_, variantIndex) => {
+          const generatedImage = await callImageGeneration(prompt, previewUrl, inpaintingLines, placedElements);
+          generatedResults[variantIndex] = generatedImage;
 
-          /*
-          let filteredImage;
-          if (activeTool === 'inpainting') {
-            filteredImage = await applyInpaintingFilter(previewUrl, inpaintingLines);
-          } else if (activeTool === 'dragdrop') {
-            filteredImage = await applyDragDropFilter(previewUrl, placedElements);
-          } else {
-            filteredImage = await applySepiaFilter(previewUrl);
+          setResultVariants((prev) => {
+            const next = [...prev];
+            next[variantIndex] = {
+              imageUrl: generatedImage,
+              status: generatedImage ? "ready" : "error",
+            };
+            return next;
+          });
+
+          if (generatedImage) {
+            setSelectedVariantIndex((currentIndex) => (generatedResults[currentIndex] ? currentIndex : variantIndex));
           }
+        })
+      );
 
-          setResultImage(filteredImage);
-
-          if (filteredImage && user) {
-            const saved = await saveNewGeneration(user.id, prompt, previewUrl, filteredImage);
-            hid = saved.id;
-          }
-          */
-          
-          // Call the function
-          const result = await callImageGeneration(prompt, previewUrl, inpaintingLines, placedElements);
-
-          // Set the result image
-          setResultImage(result);
-
-          if (result && user) {
-            const saved = await saveNewGeneration(user.id, user.username, prompt, previewUrl, result, {
-              baseHistoryId: refineBaseHistoryId,
-            });
-            hid = saved.id;
-            console.log(`Generation saved with history ID: ${hid}`);
-          }
-            
-          
-
-          setLastHistoryId(hid);
-          setRefineBaseHistoryId(null);
-          setResultSuggestions(getRandomSuggestions(4));
-          setRealSuggestions(getRandomInitialSuggestions(4));
-
-          setStep("result"); // After this step the new image is shown!
-
+      if (!generatedResults[selectedVariantIndex]) {
+        const firstReadyIndex = generatedResults.findIndex(Boolean);
+        if (firstReadyIndex >= 0) {
+          setSelectedVariantIndex(firstReadyIndex);
         }
-      } catch (error) {
-        console.error("Failed to generate image:", error);
-
-        if (previewUrl) {
-          setResultImage(previewUrl);
-
-          let hid: number | null = null;
-          if (user) {
-            const saved = await saveNewGeneration(user.id, user.username, prompt, previewUrl, previewUrl, {
-              baseHistoryId: refineBaseHistoryId,
-            });
-            hid = saved.id;
-          }
-          setLastHistoryId(hid);
-          setRefineBaseHistoryId(null);
-          setResultSuggestions(getRandomSuggestions(4));
-          setRealSuggestions(getRandomInitialSuggestions(4));
-          setStep("result");
-        }
-      } finally {
-        setIsGenerating(false);
       }
-    };
 
-    handleProcess(); // Run it!
+      setResultSuggestions(getRandomSuggestions(4));
+      setRealSuggestions(getRandomInitialSuggestions(4));
+    } catch (error) {
+      console.error("Failed to generate image:", error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const persistSelectedGeneration = async (): Promise<number | null> => {
+    if (!previewUrl || !selectedResultImage || !user) {
+      return null;
+    }
+
+    const resolvedSelectedIndex = resultVariants[selectedVariantIndex]?.imageUrl
+      ? selectedVariantIndex
+      : resultVariants.findIndex((variant) => Boolean(variant.imageUrl));
+    const safeSelectedIndex = Math.max(0, Math.min(resolvedSelectedIndex, OUTPUT_VARIANTS_COUNT - 1));
+    const allOutputImages = Array.from({ length: OUTPUT_VARIANTS_COUNT }, (_, index) => {
+      return resultVariants[index]?.imageUrl || selectedResultImage;
+    });
+
+    const saved = await saveNewGeneration(user.id, user.username, prompt, previewUrl, selectedResultImage, {
+      baseHistoryId: refineBaseHistoryId,
+      allOutputImages,
+      selectedOutputIndex: safeSelectedIndex,
+    });
+
+    setLastHistoryId(saved.id);
+    return saved.id;
   };
 
   const renderTool = () => {
@@ -593,13 +598,18 @@ const EditorPage = () => {
 
   //console.log(resultSuggestions, realSuggestions);
 
-  const handleRefineResult = () => {
-    if (resultImage) {
-      setRefineBaseHistoryId(lastHistoryId);
-      setPreviewUrl(resultImage);
+  const handleRefineResult = async () => {
+    if (!selectedResultImage || isGenerating || isSavingSelection) return;
+
+    setIsSavingSelection(true);
+    try {
+      const savedHistoryId = await persistSelectedGeneration();
+      setRefineBaseHistoryId(savedHistoryId);
+      setPreviewUrl(selectedResultImage);
       setSessionRound((r) => r + 1);
       setStep("editor");
-      setResultImage(null);
+      setResultVariants([]);
+      setSelectedVariantIndex(0);
       setFeedbackOpen(false);
       setFeedbackText("");
       setFeedbackThanks(false);
@@ -607,11 +617,27 @@ const EditorPage = () => {
       setPlacedElements([]);
       setResultSuggestions(getRandomSuggestions(4));
       setRealSuggestions(getRandomInitialSuggestions(4));
+    } catch (error) {
+      console.error("Failed to save selected result for refine:", error);
+    } finally {
+      setIsSavingSelection(false);
     }
   };
 
   
-  const handleExitGallery = () => {
+  const handleExitGallery = async () => {
+    if (isGenerating || isSavingSelection) return;
+
+    setIsSavingSelection(true);
+    try {
+      await persistSelectedGeneration();
+      setRefineBaseHistoryId(null);
+    } catch (error) {
+      console.error("Failed to save selected result for gallery:", error);
+    } finally {
+      setIsSavingSelection(false);
+    }
+
     setFeedbackOpen(false);
     setFeedbackText("");
     navigate("/gallery");
@@ -621,7 +647,8 @@ const EditorPage = () => {
     setSessionRound(1);
     setRefineBaseHistoryId(null);
     setStep("editor");
-    setResultImage(null);
+    setResultVariants([]);
+    setSelectedVariantIndex(0);
     setLastHistoryId(null);
     setFeedbackOpen(false);
     setFeedbackText("");
@@ -655,7 +682,9 @@ const EditorPage = () => {
   };
 
   const renderResult = () => {
-    if (!previewUrl || !resultImage) {
+    const hasReadyVariant = resultVariants.some((variant) => variant.status === "ready" && Boolean(variant.imageUrl));
+
+    if (!previewUrl || (!isGenerating && resultVariants.length > 0 && !hasReadyVariant)) {
       return (
         <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in duration-300">
           <div className="bg-red-50 p-4 rounded-full mb-4">
@@ -668,7 +697,8 @@ const EditorPage = () => {
           <button
             onClick={() => {
               setStep("editor");
-              setResultImage(null);
+              setResultVariants([]);
+              setSelectedVariantIndex(0);
             }}
             className="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors font-medium"
           >
@@ -696,8 +726,9 @@ const EditorPage = () => {
             </p>
             */}
           </div>
-          <span className="shrink-0 self-start sm:self-auto inline-flex items-center rounded-full border border-emerald-200/90 bg-emerald-50/90 px-3 py-1.5 text-xs font-semibold text-emerald-800 shadow-sm">
-            Output ready
+          <span className="shrink-0 self-start sm:self-auto inline-flex items-center gap-1.5 rounded-full border border-emerald-200/90 bg-emerald-50/90 px-3 py-1.5 text-xs font-semibold text-emerald-800 shadow-sm">
+            {(isGenerating || isSavingSelection) ? <Loader2 size={14} className="animate-spin" /> : null}
+            {isSavingSelection ? "Saving selection" : isGenerating ? "Generating options" : "Output ready"}
           </span>
         </div>
 
@@ -715,7 +746,8 @@ const EditorPage = () => {
             <button
             type="button"
             onClick={() => handleExitGallery()}
-            className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-gray-900 text-white font-semibold shadow-lg hover:bg-black hover:scale-[1.01] active:scale-[0.99] transition-all"
+            disabled={!selectedResultImage || isGenerating || isSavingSelection}
+            className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-gray-900 text-white font-semibold shadow-lg hover:bg-black hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               Exit to Gallery
             </button>
@@ -732,10 +764,11 @@ const EditorPage = () => {
           <button
             type="button"
             onClick={handleRefineResult}
-            className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-emerald-600 text-white font-semibold shadow-md hover:bg-emerald-700 hover:scale-[1.01] active:scale-[0.99] transition-all"
+            disabled={!selectedResultImage || isGenerating || isSavingSelection}
+            className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-emerald-600 text-white font-semibold shadow-md hover:bg-emerald-700 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             <Sparkles size={18} />
-            Refine This Result
+            Refine Selected Result
           </button>
           </div>
 
@@ -809,8 +842,56 @@ const EditorPage = () => {
         <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden ring-4 ring-white">
           <ComparisonSlider
             originalImage={previewUrl}
-            editedImage={resultImage}
+            editedImage={selectedResultImage || previewUrl}
           />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {Array.from({ length: OUTPUT_VARIANTS_COUNT }, (_, index) => {
+            const variant = resultVariants[index] ?? { imageUrl: null, status: "loading" as const };
+            const isSelected = index === selectedVariantIndex;
+            const isReady = variant.status === "ready" && Boolean(variant.imageUrl);
+
+            return (
+              <button
+                key={`variant-${index}`}
+                type="button"
+                disabled={!isReady}
+                onClick={() => setSelectedVariantIndex(index)}
+                className={`relative overflow-hidden rounded-xl border text-left transition-all ${
+                  isSelected
+                    ? "border-emerald-500 ring-2 ring-emerald-400/40 shadow-md"
+                    : "border-gray-200 hover:border-gray-300"
+                } ${!isReady ? "cursor-not-allowed" : "cursor-pointer"}`}
+              >
+                <div className="aspect-square bg-gray-100 flex items-center justify-center">
+                  {isReady && variant.imageUrl ? (
+                    <img src={variant.imageUrl} alt={`Generated option ${index + 1}`} className="w-full h-full object-cover" />
+                  ) : variant.status === "error" ? (
+                    <div className="flex flex-col items-center gap-2 text-gray-500">
+                      <ImageOff size={20} />
+                      <span className="text-xs font-medium">Failed</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-gray-500">
+                      <Loader2 size={20} className="animate-spin" />
+                      <span className="text-xs font-medium">Generating...</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between px-3 py-2 bg-white">
+                  <span className="text-xs font-semibold text-gray-700">Option {index + 1}</span>
+                  {isSelected && isReady ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
+                      <CheckCircle2 size={14} />
+                      Selected
+                    </span>
+                  ) : null}
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         {/*}
@@ -1084,7 +1165,7 @@ const EditorPage = () => {
   );
 
   if(false){ // Here to remove warning
-      console.log(resultSuggestions, realSuggestions, handleBack, showImagePopup);
+      console.log(resultSuggestions, realSuggestions, handleBack, showImagePopup, lastHistoryId);
   }
 };
 

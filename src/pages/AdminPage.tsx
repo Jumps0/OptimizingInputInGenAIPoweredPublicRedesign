@@ -187,6 +187,26 @@ const AdminPage = () => {
     return userNameById.get(entry.userId) || `User #${entry.userId}`;
   };
 
+  const getHistoryOutputImages = (entry: EditHistory): string[] => {
+    if (Array.isArray(entry.outputImages) && entry.outputImages.length > 0) {
+      return entry.outputImages.filter(Boolean);
+    }
+    return entry.outputImage ? [entry.outputImage] : [];
+  };
+
+  const getSelectedOutputImage = (entry: EditHistory): string => {
+    const outputs = getHistoryOutputImages(entry);
+    if (outputs.length === 0) {
+      return entry.outputImage;
+    }
+
+    const selectedIndex = Number.isFinite(entry.selectedOutputIndex)
+      ? Math.max(0, Math.min(Number(entry.selectedOutputIndex), outputs.length - 1))
+      : 0;
+
+    return outputs[selectedIndex] || outputs[0] || entry.outputImage;
+  };
+
   const filteredUsers = useMemo(() =>
     users.filter((u) => {
       const methodKey = (u.assignedMethod || 'text') as keyof MethodFilterState;
@@ -282,7 +302,11 @@ const AdminPage = () => {
       'Prompt',
       'Version',
       'Input Image URL',
-      'Output Image URL',
+      'Selected Output Image URL',
+      'Output Option 1 URL',
+      'Output Option 2 URL',
+      'Output Option 3 URL',
+      'Selected Output Index',
       'Survey ID',
       'Survey Submitted At',
       'Aware Of AI',
@@ -305,6 +329,8 @@ const AdminPage = () => {
       return Array.from({ length: rowCount }, (_, index) => {
         const generation = userPrompts[index];
         const survey = userResponses[index];
+        const outputs = generation ? getHistoryOutputImages(generation) : [];
+        const selectedOutput = generation ? getSelectedOutputImage(generation) : '';
 
         return [
           u.id,
@@ -317,7 +343,11 @@ const AdminPage = () => {
           generation?.prompt ?? '',
           generation?.version ?? '',
           generation?.inputImage ?? '',
-          generation?.outputImage ?? '',
+          selectedOutput,
+          outputs[0] ?? '',
+          outputs[1] ?? '',
+          outputs[2] ?? '',
+          generation?.selectedOutputIndex ?? '',
           survey?.id ?? '',
           survey?.createdAt ? new Date(survey.createdAt).toISOString() : '',
           survey?.responses?.awareOfAI ?? '',
@@ -851,6 +881,8 @@ const AdminPage = () => {
                           filteredHistory.map(item => (
                             (() => {
                               const historyUserName = getHistoryUserName(item);
+                              const outputImages = getHistoryOutputImages(item);
+                              const selectedOutputImage = getSelectedOutputImage(item);
                               const userInitials = historyUserName.slice(0, 2).toUpperCase();
                               return (
                             <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
@@ -908,22 +940,36 @@ const AdminPage = () => {
                                   </a>
                                   <ArrowRight size={16} className="text-gray-400" />
                                   <a 
-                                    href={item.outputImage}
+                                    href={selectedOutputImage}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="relative group/img w-16 h-16 rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-gray-100 block"
                                   >
-                                    <img src={item.outputImage} alt="output" className="w-full h-full object-cover" />
+                                    <img src={selectedOutputImage} alt="output" className="w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">
                                       View
                                     </div>
                                   </a>
+                                  <div className="ml-2 flex items-center gap-1">
+                                    {outputImages.slice(0, 3).map((url, idx) => (
+                                      <a
+                                        key={`${item.id}-option-${idx}`}
+                                        href={url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="relative h-8 w-8 overflow-hidden rounded border border-gray-200"
+                                        title={`Output option ${idx + 1}`}
+                                      >
+                                        <img src={url} alt={`option ${idx + 1}`} className="h-full w-full object-cover" />
+                                      </a>
+                                    ))}
+                                  </div>
                                 </div>
                               </td>
                               <td className="p-4 text-right align-top">
                                 <div className="inline-flex items-center gap-2">
                                   <a 
-                                    href={item.outputImage} 
+                                    href={selectedOutputImage} 
                                     target="_blank" 
                                     rel="noreferrer" 
                                     className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-e-700 bg-e-50 hover:bg-e-100 rounded-md transition-colors"
@@ -968,6 +1014,8 @@ const AdminPage = () => {
                           {filteredHistory.map(item => (
                             (() => {
                               const historyUserName = getHistoryUserName(item);
+                              const outputImages = getHistoryOutputImages(item);
+                              const selectedOutputImage = getSelectedOutputImage(item);
                               return (
                             <div key={item.id} className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col">
                               <div className="relative aspect-[2/1] bg-gray-100 flex">
@@ -1005,9 +1053,9 @@ const AdminPage = () => {
                                   </div>
                                 </div>
                                 <div className="flex-1 relative group/output">
-                                  <img src={item.outputImage} alt="output" className="w-full h-full object-cover" />
+                                  <img src={selectedOutputImage} alt="output" className="w-full h-full object-cover" />
                                   <a 
-                                    href={item.outputImage}
+                                    href={selectedOutputImage}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="absolute inset-0 bg-black/40 opacity-0 group-hover/output:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer z-10"
@@ -1036,6 +1084,23 @@ const AdminPage = () => {
                                 <p className="text-sm text-gray-900 font-medium leading-relaxed mb-4 line-clamp-3 flex-1" title={item.prompt}>
                                   "{item.prompt}"
                                 </p>
+
+                                {outputImages.length > 1 ? (
+                                  <div className="mb-4 flex items-center gap-1.5">
+                                    {outputImages.slice(0, 3).map((url, idx) => (
+                                      <a
+                                        key={`${item.id}-grid-option-${idx}`}
+                                        href={url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="h-9 w-9 overflow-hidden rounded border border-gray-200"
+                                        title={`Output option ${idx + 1}`}
+                                      >
+                                        <img src={url} alt={`option ${idx + 1}`} className="h-full w-full object-cover" />
+                                      </a>
+                                    ))}
+                                  </div>
+                                ) : null}
                                 
                                 <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
                                   <div className="flex items-center gap-1.5">

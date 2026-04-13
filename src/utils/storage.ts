@@ -434,6 +434,8 @@ export const saveNewGeneration = async (
   outputImage: string,
   options?: {
     baseHistoryId?: number | null;
+    allOutputImages?: string[];
+    selectedOutputIndex?: number;
   }
 ): Promise<EditHistory> => {
   const projects = getStoredProjects();
@@ -450,6 +452,15 @@ export const saveNewGeneration = async (
   const persistentInputImage = await toPersistentImageData(inputImage);
   
   const persistentOutputImage = await toPersistentImageData(outputImage);
+  const normalizedOutputImages = Array.isArray(options?.allOutputImages) && options?.allOutputImages.length > 0
+    ? options.allOutputImages
+    : [outputImage];
+  const persistentOutputImages = await Promise.all(
+    normalizedOutputImages.map((img) => toPersistentImageData(img))
+  );
+  const selectedOutputIndex = Number.isFinite(options?.selectedOutputIndex)
+    ? Math.max(0, Math.min(Number(options?.selectedOutputIndex), persistentOutputImages.length - 1))
+    : 0;
 
   let projectId: number;
   let version = 1;
@@ -484,6 +495,8 @@ export const saveNewGeneration = async (
     prompt,
     inputImage: persistentInputImage,
     outputImage: persistentOutputImage,
+    outputImages: persistentOutputImages,
+    selectedOutputIndex,
     version,
     timestamp: new Date().toISOString(),
   };
