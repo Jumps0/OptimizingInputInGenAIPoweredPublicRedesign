@@ -98,6 +98,20 @@ export default async function handler(req, res) {
                 return null;
               }
 
+              const normalizedOutputImages = Array.isArray(payload.outputImages)
+                ? payload.outputImages.map((item) => String(item || '')).filter(Boolean)
+                : Array.isArray(payload.allOutputImages)
+                  ? payload.allOutputImages.map((item) => String(item || '')).filter(Boolean)
+                  : [];
+
+              const normalizedSelectedIndex = Number.isFinite(payload.selectedOutputIndex)
+                ? Number(payload.selectedOutputIndex)
+                : Number.isFinite(payload.selectedImageIndex)
+                  ? Number(payload.selectedImageIndex)
+                  : undefined;
+
+              const normalizedOutputImage = String(payload.outputImage || '') || normalizedOutputImages[0] || '';
+
               return {
                 id: Number(payload.id) || Date.now(),
                 projectId: Number(payload.projectId) || 0,
@@ -105,13 +119,9 @@ export default async function handler(req, res) {
                 username: String(payload.username || ''),
                 prompt: String(payload.prompt || ''),
                 inputImage: String(payload.inputImage || ''),
-                outputImage: String(payload.outputImage || ''),
-                outputImages: Array.isArray(payload.outputImages)
-                  ? payload.outputImages.map((item) => String(item || '')).filter(Boolean)
-                  : undefined,
-                selectedOutputIndex: Number.isFinite(payload.selectedOutputIndex)
-                  ? Number(payload.selectedOutputIndex)
-                  : undefined,
+                outputImage: normalizedOutputImage,
+                outputImages: normalizedOutputImages.length > 0 ? normalizedOutputImages : undefined,
+                selectedOutputIndex: normalizedSelectedIndex,
                 version: Number(payload.version) || 1,
                 timestamp: String(payload.timestamp || new Date().toISOString()),
                 blobPath: blob.pathname,

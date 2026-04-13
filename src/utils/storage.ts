@@ -318,7 +318,9 @@ export const fetchPromptHistories = async (): Promise<EditHistory[]> => {
     }
 
     const data = (await response.json()) as { history?: EditHistory[] };
-    return Array.isArray(data.history) ? data.history : [];
+    const history = Array.isArray(data.history) ? data.history : [];
+    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+    return history;
   } catch {
     return getStoredHistory();
   }
@@ -481,7 +483,11 @@ export const saveNewGeneration = async (
 
     // Save project with safety check
     projects.push(newProject);
-    safelySetItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
+    try {
+      safelySetItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
+    } catch (error) {
+      console.warn('Failed to persist project locally. Continuing with blob save.', error);
+    }
   }
 
   // Create history item
@@ -503,7 +509,11 @@ export const saveNewGeneration = async (
 
   // Save history with safety check
   history.push(newHistoryItem);
-  safelySetItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+  try {
+    safelySetItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+  } catch (error) {
+    console.warn('Failed to persist prompt history locally. Continuing with blob save.', error);
+  }
 
   await savePromptHistoryEntry(newHistoryItem);
   

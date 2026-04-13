@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchEditHistory, type EditHistory } from '@/utils';
+import { fetchPromptHistories, type EditHistory } from '@/utils';
 import { useAuth } from '@/context';
 import { Camera, X, ClipboardList } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +12,19 @@ const GalleryPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<EditHistory | null>(null);
 
+  const getSelectedOutputImage = (entry: EditHistory): string => {
+    const outputs = Array.isArray(entry.outputImages) ? entry.outputImages.filter(Boolean) : [];
+    if (outputs.length === 0) {
+      return entry.outputImage;
+    }
+
+    const selectedIndex = Number.isFinite(entry.selectedOutputIndex)
+      ? Math.max(0, Math.min(Number(entry.selectedOutputIndex), outputs.length - 1))
+      : 0;
+
+    return outputs[selectedIndex] || outputs[0] || entry.outputImage;
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -19,7 +32,7 @@ const GalleryPage = () => {
           setItems([]);
           return;
         }
-        const historyData = await fetchEditHistory();
+        const historyData = await fetchPromptHistories();
         const mine = historyData
           .filter((item) => item.userId === user.id)
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -70,7 +83,7 @@ const GalleryPage = () => {
               onClick={() => setSelectedItem(item)}
               className="aspect-square overflow-hidden rounded-2xl border border-gray-200 hover:border-emerald-300 transition-colors shadow-sm active:scale-[0.99]"
             >
-              <img src={item.outputImage} alt={item.prompt} className="w-full h-full object-cover" />
+              <img src={getSelectedOutputImage(item)} alt={item.prompt} className="w-full h-full object-cover" />
             </button>
           ))}
         </div>
@@ -87,7 +100,7 @@ const GalleryPage = () => {
             </div>
             <div className="p-4 space-y-4">
               <div className="rounded-xl overflow-hidden border border-gray-100">
-                <ComparisonSlider originalImage={selectedItem.inputImage} editedImage={selectedItem.outputImage} />
+                <ComparisonSlider originalImage={selectedItem.inputImage} editedImage={getSelectedOutputImage(selectedItem)} />
               </div>
               <div className="space-y-2 text-sm">
                 <p className="text-gray-500">Prompt used</p>
