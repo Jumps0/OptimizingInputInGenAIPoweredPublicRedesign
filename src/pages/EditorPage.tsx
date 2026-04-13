@@ -839,14 +839,21 @@ const EditorPage = () => {
           )}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden ring-4 ring-white">
-          <ComparisonSlider
-            originalImage={previewUrl}
-            editedImage={selectedResultImage || previewUrl}
-          />
+        <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden ring-4 ring-white min-h-[280px] sm:min-h-[360px]">
+          {selectedResultImage ? (
+            <ComparisonSlider
+              originalImage={previewUrl}
+              editedImage={selectedResultImage}
+            />
+          ) : (
+            <div className="h-full min-h-[280px] sm:min-h-[360px] flex flex-col items-center justify-center gap-3 text-gray-500 bg-gray-50">
+              <Loader2 size={28} className="animate-spin text-emerald-600" />
+              <p className="text-sm font-medium">Preparing first generated image...</p>
+            </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {Array.from({ length: OUTPUT_VARIANTS_COUNT }, (_, index) => {
             const variant = resultVariants[index] ?? { imageUrl: null, status: "loading" as const };
             const isSelected = index === selectedVariantIndex;
@@ -870,25 +877,24 @@ const EditorPage = () => {
                   ) : variant.status === "error" ? (
                     <div className="flex flex-col items-center gap-2 text-gray-500">
                       <ImageOff size={20} />
-                      <span className="text-xs font-medium">Failed</span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-gray-500">
                       <Loader2 size={20} className="animate-spin" />
-                      <span className="text-xs font-medium">Generating...</span>
                     </div>
                   )}
                 </div>
 
-                <div className="flex items-center justify-between px-3 py-2 bg-white">
-                  <span className="text-xs font-semibold text-gray-700">Option {index + 1}</span>
-                  {isSelected && isReady ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
-                      <CheckCircle2 size={14} />
-                      Selected
-                    </span>
-                  ) : null}
-                </div>
+                {isSelected && isReady ? (
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute inset-0 bg-emerald-500/18" />
+                    <div className="absolute inset-0 flex items-start justify-end p-2 sm:p-3">
+                      <span className="inline-flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg">
+                        <CheckCircle2 className="h-8 w-8 sm:h-9 sm:w-9" />
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
               </button>
             );
           })}
