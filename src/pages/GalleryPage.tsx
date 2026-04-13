@@ -106,10 +106,6 @@ const GalleryPage = () => {
                 <p className="text-gray-500">Prompt used</p>
                 <p className="text-gray-900">{selectedItem.prompt || "No prompt provided."}</p>
               </div>
-              <div className="space-y-2 text-sm">
-                <p className="text-gray-500">Editing method used</p>
-                <p className="text-gray-900 capitalize">{user?.assignedMethod ?? "text"}</p>
-              </div>
               <button
                 onClick={() => navigate("/editor")}
                 className="w-full py-3 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition-colors"
