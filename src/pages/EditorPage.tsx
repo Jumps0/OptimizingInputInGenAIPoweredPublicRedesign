@@ -737,8 +737,7 @@ const EditorPage = () => {
         <div className="flex flex-col gap-1">
             <p className="text-sm font-semibold text-gray-900">Image generation complete!</p>
             <p className="text-xs text-gray-600">
-              You may now exit to the Gallery and see the photo(s) you have generated, restart with the same original photo, or go back to the editor to refine the image you have selected further. 
-              {/* If you're not happy with the result, please give feedback so we can improve the system! */}
+              You may now exit to the Gallery and see the selected photo(s) you have generated, restart with the same original photo, or go back to the editor to refine the image you have selected further. 
             </p>
           </div>
 
