@@ -253,13 +253,15 @@ const AdminPage = () => {
         userName,
         String(f.userId),
         String(f.id),
+        f.responses.age || '',
+        f.responses.gender || '',
         f.responses.awareOfAI || '',
         f.responses.usedAI || '',
         f.responses.easyToUse || '',
+        f.responses.expressIdeas || '',
         f.responses.matchedExpectation || '',
-        f.responses.feltControl || '',
-        f.responses.understoodIntention || '',
-        f.responses.creativeResults || '',
+        f.responses.easyEdit || '',
+        f.responses.feltEngaged || '',
         f.responses.overallSatisfaction || '',
         f.responses.followUpInterview || '',
         f.responses.additionalComments || '',
@@ -309,13 +311,15 @@ const AdminPage = () => {
       'Selected Output Index',
       'Survey ID',
       'Survey Submitted At',
+      'Age',
+      'Gender',
       'Aware Of AI',
       'Used AI Before',
       'Easy To Use',
+      'Express Ideas',
       'Matched Expectation',
-      'Felt Control',
-      'Understood Intention',
-      'Creative Results',
+      'Easy Edit',
+      'Felt Engaged',
       'Overall Satisfaction',
       'Open To Follow-up Interview',
       'Additional Comments',
@@ -350,13 +354,15 @@ const AdminPage = () => {
           generation?.selectedOutputIndex ?? '',
           survey?.id ?? '',
           survey?.createdAt ? new Date(survey.createdAt).toISOString() : '',
+          survey?.responses?.age ?? '',
+          survey?.responses?.gender ?? '',
           survey?.responses?.awareOfAI ?? '',
           survey?.responses?.usedAI ?? '',
           survey?.responses?.easyToUse ?? '',
+          survey?.responses?.expressIdeas ?? '',
           survey?.responses?.matchedExpectation ?? '',
-          survey?.responses?.feltControl ?? '',
-          survey?.responses?.understoodIntention ?? '',
-          survey?.responses?.creativeResults ?? '',
+          survey?.responses?.easyEdit ?? '',
+          survey?.responses?.feltEngaged ?? '',
           survey?.responses?.overallSatisfaction ?? '',
           survey?.responses?.followUpInterview ?? '',
           survey?.responses?.additionalComments ?? '',
@@ -1160,6 +1166,10 @@ const AdminPage = () => {
                             </td>
                             <td className="p-4 max-w-sm">
                               <p className="text-sm text-gray-700">
+                                Age: <span className="font-semibold text-gray-900">{f.responses.age || '—'}</span>
+                                Gender: <span className="font-semibold text-gray-900">{f.responses.gender || '—'}</span>
+                              </p>
+                              <p className="text-sm text-gray-700">
                                 Aware of AI: <span className="font-semibold text-gray-900">{f.responses.awareOfAI || '—'}</span>
                               </p>
                               <p className="text-sm text-gray-700 mt-1">
@@ -1169,10 +1179,10 @@ const AdminPage = () => {
                             <td className="p-4 max-w-md">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-1 gap-x-4 text-sm text-gray-700">
                                 <span>Easy to use: <span className="font-semibold text-gray-900">{f.responses.easyToUse || '—'}</span></span>
-                                <span>Matched expectation: <span className="font-semibold text-gray-900">{f.responses.matchedExpectation || '—'}</span></span>
-                                <span>Felt control: <span className="font-semibold text-gray-900">{f.responses.feltControl || '—'}</span></span>
-                                <span>Understood intention: <span className="font-semibold text-gray-900">{f.responses.understoodIntention || '—'}</span></span>
-                                <span>Creative results: <span className="font-semibold text-gray-900">{f.responses.creativeResults || '—'}</span></span>
+                                <span>Express ideas: <span className="font-semibold text-gray-900">{f.responses.expressIdeas || '—'}</span></span>
+                                <span>Matched Expectations: <span className="font-semibold text-gray-900">{f.responses.matchedExpectation || '—'}</span></span>
+                                <span>Easy to Edit: <span className="font-semibold text-gray-900">{f.responses.easyEdit || '—'}</span></span>
+                                <span>Felt Engaged: <span className="font-semibold text-gray-900">{f.responses.feltEngaged || '—'}</span></span>
                                 <span>Overall satisfaction: <span className="font-semibold text-gray-900">{f.responses.overallSatisfaction || '—'}</span></span>
                               </div>
                               <p className="mt-2 text-sm text-gray-700">

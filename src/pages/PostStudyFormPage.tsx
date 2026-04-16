@@ -7,7 +7,11 @@ type YesNoOption = "Yes" | "No";
 
 type RatingOption = "1" | "2" | "3" | "4" | "5";
 
+type GenderOption = "Male" | "Female" | "Other";
+
 interface PostStudyResponses extends Record<string, string> {
+  age: string;
+  gender: GenderOption | "";
   awareOfAI: YesNoOption | "";
   usedAI: YesNoOption | "";
   easyToUse: RatingOption | "";
@@ -27,6 +31,8 @@ const PostStudyFormPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [responses, setResponses] = useState<PostStudyResponses>({
+    age: "",
+    gender: "",
     awareOfAI: "",
     usedAI: "",
     easyToUse: "",
@@ -84,6 +90,51 @@ const PostStudyFormPage = () => {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-6 space-y-8">
+            <section className="space-y-4">
+              <h2 className="text-lg font-semibold text-gray-900">Demographics</h2>
+              <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <fieldset>
+                    <div className="flex flex-col gap-4">
+                      <div>
+                        <label htmlFor="age" className="block text-sm font-medium text-gray-800 mb-1">
+                          Age
+                        </label>
+                        <input
+                          type="number"
+                          id="age"
+                          name="age"
+                          min="16"
+                          max="100"
+                          value={responses.age || ""}
+                          onChange={e => setResponses(prev => ({ ...prev, age: e.target.value }))}
+                          className="w-32 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="gender" className="block text-sm font-medium text-gray-800 mb-1">
+                          Gender
+                        </label>
+                        <select
+                          id="gender"
+                          name="gender"
+                          value={responses.gender || ""}
+                          onChange={e => setResponses(prev => ({ ...prev, gender: e.target.value as GenderOption }))}
+                          className="w-40 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
+                          required
+                        >
+                          <option value="" disabled>Select gender</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                </fieldset>
+              </div>
+            </section>
+
+
             <section className="space-y-4">
               <h2 className="text-lg font-semibold text-gray-900">Prior Experience</h2>
               <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
