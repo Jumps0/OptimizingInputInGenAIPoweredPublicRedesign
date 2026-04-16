@@ -11,10 +11,10 @@ interface PostStudyResponses extends Record<string, string> {
   awareOfAI: YesNoOption | "";
   usedAI: YesNoOption | "";
   easyToUse: RatingOption | "";
+  expressIdeas: RatingOption | "";
   matchedExpectation: RatingOption | "";
-  feltControl: RatingOption | "";
-  understoodIntention: RatingOption | "";
-  creativeResults: RatingOption | "";
+  easyEdit: RatingOption | "";
+  feltEngaged: RatingOption | "";
   overallSatisfaction: RatingOption | "";
   followUpInterview: YesNoOption;
   additionalComments: string;
@@ -23,25 +23,17 @@ interface PostStudyResponses extends Record<string, string> {
 const yesNoOptions: YesNoOption[] = ["Yes", "No"];
 const ratingOptions: RatingOption[] = ["1", "2", "3", "4", "5"];
 
-const methodLabels: Record<string, string> = {
-  text: "text",
-  voice: "voice",
-  inpainting: "inpainting",
-  dragdrop: "drag-and-drop",
-};
-
 const PostStudyFormPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const assignedMethodLabel = user ? methodLabels[user.assignedMethod] ?? user.assignedMethod : "assigned";
   const [responses, setResponses] = useState<PostStudyResponses>({
     awareOfAI: "",
     usedAI: "",
     easyToUse: "",
+    expressIdeas: "",
     matchedExpectation: "",
-    feltControl: "",
-    understoodIntention: "",
-    creativeResults: "",
+    easyEdit: "",
+    feltEngaged: "",
     overallSatisfaction: "",
     followUpInterview: "No",
     additionalComments: "",
@@ -150,15 +142,12 @@ const PostStudyFormPage = () => {
               </p>
 
               {[
-                { key: "easyToUse", label: "The input method was easy to use" },
-                { key: "matchedExpectation", label: "The final image matched what I asked for." },
-                { key: "feltControl", label: "I felt in control of what the AI generated." },
-                { key: "understoodIntention", label: "I am confident that the AI understood my intention." },
-                { key: "creativeResults", label: "The AI generated creative and varied results" },
-                {
-                  key: "overallSatisfaction",
-                  label: `Overall, I was satisfied with my experience using the ${assignedMethodLabel} input method.`,
-                },
+                { key: "easyToUse", label: "The app was easy to use." },
+                { key: "expressIdeas", label: "I was able to clearly express my ideas." },
+                { key: "matchedExpectation", label: "The final image I selected matched what I had in mind." },
+                { key: "easyEdit", label: "I found it easy to refine or edit the image to get closer to what I want." },
+                { key: "feltEngaged", label: "I felt engaged while using the app." },
+                { key: "overallSatisfaction",  label: `Overall, I was satisfied with my experience.`, },
               ].map((question) => (
                 <fieldset key={question.key} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
                   <legend className="text-sm font-medium text-gray-800">{question.label}</legend>
