@@ -349,12 +349,13 @@ export const deletePromptHistoryItem = async (id: number, blobPath?: string): Pr
 };
 
 const savePromptHistoryEntry = async (entry: EditHistory): Promise<void> => {
+  const remotePayload = await toRemotePromptHistoryPayload(entry);
   const response = await fetch('/api/prompt-history', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(entry),
+    body: JSON.stringify(remotePayload),
   });
 
   if (!response.ok) {
@@ -426,6 +427,26 @@ const toPersistentImageData = async (imageUrl: string): Promise<string> => {
     console.warn('Failed to compress image, falling back to raw data URL.', e);
     return fetchImageAsDataUrl(imageUrl);
   }
+};
+
+const toRemotePromptHistoryPayload = async (entry: EditHistory): Promise<EditHistory> => {
+  const availableOutputImages = Array.isArray(entry.outputImages) ? entry.outputImages.filter(Boolean) : [];
+  const selectedIndex = Number.isFinite(entry.selectedOutputIndex)
+    ? Math.max(0, Math.min(Number(entry.selectedOutputIndex), Math.max(availableOutputImages.length - 1, 0)))
+    : 0;
+  const selectedOutputImage = availableOutputImages[selectedIndex] || entry.outputImage;
+  const compressedInputImage = await compressImage(entry.inputImage, 640, 0.5);
+  const compressedOutputImage = selectedOutputImage
+    ? await compressImage(selectedOutputImage, 640, 0.5)
+    : '';
+
+  return {
+    ...entry,
+    inputImage: compressedInputImage,
+    outputImage: compressedOutputImage,
+    outputImages: compressedOutputImage ? [compressedOutputImage] : undefined,
+    selectedOutputIndex: 0,
+  };
 };
 
 export const saveNewGeneration = async (

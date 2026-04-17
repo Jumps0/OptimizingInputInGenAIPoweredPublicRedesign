@@ -629,13 +629,19 @@ const EditorPage = () => {
     if (isGenerating || isSavingSelection) return;
 
     setIsSavingSelection(true);
+    let didPersist = false;
     try {
       await persistSelectedGeneration();
       setRefineBaseHistoryId(null);
+      didPersist = true;
     } catch (error) {
       console.error("Failed to save selected result for gallery:", error);
     } finally {
       setIsSavingSelection(false);
+    }
+
+    if (!didPersist) {
+      return;
     }
 
     setFeedbackOpen(false);
