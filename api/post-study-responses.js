@@ -3,6 +3,7 @@ import { del, list, put } from '@vercel/blob';
 const POST_STUDY_PREFIX = 'oigaippr-blob/post-study-responses/';
 
 const setCorsHeaders = (res) => {
+  res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');

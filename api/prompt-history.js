@@ -3,6 +3,7 @@ import { del, list, put } from '@vercel/blob';
 const PROMPT_HISTORY_PREFIX = 'oigaippr-blob/prompt-history/';
 
 const setCorsHeaders = (res) => {
+  res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');

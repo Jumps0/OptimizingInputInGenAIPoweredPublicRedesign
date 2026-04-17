@@ -5,6 +5,7 @@ const USERS_FILE = `${USERS_PREFIX}accounts.json`;
 const ALLOWED_METHODS = new Set(['text', 'voice', 'inpainting', 'dragdrop']);
 
 const setCorsHeaders = (res) => {
+  res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
