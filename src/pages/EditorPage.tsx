@@ -851,9 +851,9 @@ const EditorPage = () => {
               editedImage={selectedResultImage}
             />
           ) : (
-            <div className="h-full min-h-[280px] sm:min-h-[360px] flex flex-col items-center justify-center gap-3 text-gray-500 bg-gray-50">
+            <div className="h-full min-h-[280px] sm:min-h-[360px] flex flex-col items-center justify-center gap-3 px-5 text-gray-500 bg-gray-50">
               <Loader2 size={28} className="animate-spin text-emerald-600" />
-              <p className="text-sm font-medium">Preparing first generated image... this usually takes 10-30 seconds.</p>
+              <p className="max-w-xs text-center text-sm font-medium sm:max-w-none">Preparing first generated image... this usually takes 10-30 seconds.</p>
             </div>
           )}
         </div>
