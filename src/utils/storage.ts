@@ -305,6 +305,8 @@ export const deletePostStudyResponseItem = async (id: number, blobPath?: string)
 };
 
 export const fetchPromptHistories = async (): Promise<EditHistory[]> => {
+  const localHistory = getStoredHistory();
+
   try {
     const response = await fetch(`/api/prompt-history?_=${Date.now()}`, {
       method: 'GET',
@@ -322,10 +324,15 @@ export const fetchPromptHistories = async (): Promise<EditHistory[]> => {
 
     const data = (await response.json()) as { history?: EditHistory[] };
     const history = Array.isArray(data.history) ? data.history : [];
+
+    if (history.length === 0 && localHistory.length > 0) {
+      return localHistory;
+    }
+
     localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
     return history;
   } catch {
-    return getStoredHistory();
+    return localHistory;
   }
 };
 
@@ -487,6 +494,7 @@ export const saveNewGeneration = async (
   const selectedOutputIndex = Number.isFinite(options?.selectedOutputIndex)
     ? Math.max(0, Math.min(Number(options?.selectedOutputIndex), persistentOutputImages.length - 1))
     : 0;
+  const selectedOutputImage = persistentOutputImages[selectedOutputIndex] || persistentOutputImage;
 
   let projectId: number;
   let version = 1;
@@ -524,9 +532,9 @@ export const saveNewGeneration = async (
     username: normalizedUsername,
     prompt,
     inputImage: persistentInputImage,
-    outputImage: persistentOutputImage,
-    outputImages: persistentOutputImages,
-    selectedOutputIndex,
+    outputImage: selectedOutputImage,
+    outputImages: selectedOutputImage ? [selectedOutputImage] : undefined,
+    selectedOutputIndex: 0,
     version,
     timestamp: new Date().toISOString(),
   };
