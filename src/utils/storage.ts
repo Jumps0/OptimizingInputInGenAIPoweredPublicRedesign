@@ -102,8 +102,9 @@ export const fetchUsersWithFallback = async (): Promise<User[]> => {
   const localUsers = getStoredUsers();
 
   try {
-    const response = await fetch('/api/users', {
+    const response = await fetch(`/api/users?_=${Date.now()}`, {
       method: 'GET',
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -260,8 +261,9 @@ export const savePostStudyResponse = async (
 
 export const fetchPostStudyResponses = async (): Promise<PostStudyResponse[]> => {
   try {
-    const response = await fetch('/api/post-study-responses', {
+    const response = await fetch(`/api/post-study-responses?_=${Date.now()}`, {
       method: 'GET',
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -304,8 +306,9 @@ export const deletePostStudyResponseItem = async (id: number, blobPath?: string)
 
 export const fetchPromptHistories = async (): Promise<EditHistory[]> => {
   try {
-    const response = await fetch('/api/prompt-history', {
+    const response = await fetch(`/api/prompt-history?_=${Date.now()}`, {
       method: 'GET',
+      cache: 'no-store',
     });
 
     if (!response.ok) {
