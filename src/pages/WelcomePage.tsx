@@ -33,10 +33,11 @@ const WelcomePage = () => {
 					Welcome
 				</p>
 				<h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-					Thank you for choosing to participate in our project. This page will give you instructions on how to use this web-app and what tasks you will be performing.
+					Thank you for participating in our project. This page will explain how to use the web-app and what you need to do.
+
 				</h1>
 				<p className="text-base leading-7 text-slate-600">
-					This web-app will allow you to take a photo with your camera of an <span className="text-base leading-7 text-slate-700 font-semibold">open environment you want to change in some way.</span> You will then be able to edit this photo using AI image generation through a specific instruction input.
+					This web-app will allow you to take a photo <span className="text-base leading-7 text-slate-700 font-semibold">of an outdoor space and redesign it</span> using AI image generation through a specific instruction input.
 				</p>
 
 				{assignedMethodCard && (
@@ -47,15 +48,16 @@ const WelcomePage = () => {
 				)}
 
 				<p className="text-base leading-7 text-slate-600">
-					Once you have specified what you want changed on your input image, hit the <span className="text-base leading-7 text-slate-700 font-semibold">"Generate"</span> button. 
-					 This process will take from <span className="text-base leading-7 text-slate-700 font-semibold">10 to 30 seconds</span>.
-					 After the generation is done, the app will display <span className="text-base leading-7 text-slate-700 font-semibold">three variants</span> for you to choose from. You can tap on an image to <span className="text-base leading-7 text-slate-700 font-semibold">select it</span>, and then compare it with your original input photo.
+					<span className="text-base leading-7 text-slate-700 font-semibold">How it works:</span>
+					Take a photo, then input clear instructions describing what you want changed in the image. Hit the <span className="text-base leading-7 text-slate-700 font-semibold">"Generate"</span> button. 
+					This process takes <span className="text-base leading-7 text-slate-700 font-semibold">10 to 30 seconds</span>.
+					After the generation is done, the app will display <span className="text-base leading-7 text-slate-700 font-semibold">three variants</span> for you to choose from. You can tap on an image to <span className="text-base leading-7 text-slate-700 font-semibold">select it</span>, and then compare it with your original input photo.
 					At this point you can choose to start over with the same initial image, continue refining the selected image with more edits, or finish editing the selected image and <span className="text-base leading-7 text-slate-700 font-semibold">exit to the gallery.</span>
 				</p>
 
 				<div className="rounded-lg border border-orange-300 bg-orange-100/50 p-4">
-					<p className="text-sm font-semibold text-orange-900">Instructions</p>
-					<p className="mt-1 text-sm leading-6 text-orange-800">To complete your task, <span className="mt-1 text-sm font-semibold leading-6 text-orange-800">capture and edit four separate images.</span> Once you are finished, go to the gallery, and complete the 'post-use survey'.</p>
+					<p className="text-sm font-semibold text-orange-900">Your task</p>
+					<p className="mt-1 text-sm leading-6 text-orange-800">Capture and edit <span className="mt-1 text-sm font-semibold leading-6 text-orange-800">four separate images.</span> When finished, go to the gallery, and complete the <span className="mt-1 text-sm font-semibold leading-6 text-orange-800">post-use survey.</span></p>
 					<p className="mt-1 text-sm leading-6 text-orange-800">You <span className="mt-1 text-sm font-semibold leading-6 text-orange-800">must</span> perform this study in the <span className="mt-1 text-sm font-semibold leading-6 text-orange-800">Teglgårds Plads </span>at Nordkraft in Aalborg.</p>
 				</div>
 
