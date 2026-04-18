@@ -439,23 +439,38 @@ const toPersistentImageData = async (imageUrl: string): Promise<string> => {
   }
 };
 
+const toHistoryImageData = async (imageUrl: string, maxWidth = 640, quality = 0.5): Promise<string> => {
+  if (!imageUrl) {
+    return imageUrl;
+  }
+
+  try {
+    return await compressImage(imageUrl, maxWidth, quality);
+  } catch (e) {
+    console.warn('Failed to compress history image, falling back to reusable data URL.', e);
+    return fetchImageAsDataUrl(imageUrl);
+  }
+};
+
 const toRemotePromptHistoryPayload = async (entry: EditHistory): Promise<EditHistory> => {
   const availableOutputImages = Array.isArray(entry.outputImages) ? entry.outputImages.filter(Boolean) : [];
   const selectedIndex = Number.isFinite(entry.selectedOutputIndex)
     ? Math.max(0, Math.min(Number(entry.selectedOutputIndex), Math.max(availableOutputImages.length - 1, 0)))
     : 0;
-  const selectedOutputImage = availableOutputImages[selectedIndex] || entry.outputImage;
-  const compressedInputImage = await compressImage(entry.inputImage, 640, 0.5);
-  const compressedOutputImage = selectedOutputImage
-    ? await compressImage(selectedOutputImage, 640, 0.5)
-    : '';
+  const compressedInputImage = await toHistoryImageData(entry.inputImage, 640, 0.5);
+  const compressedOutputImages = availableOutputImages.length > 0
+    ? await Promise.all(availableOutputImages.map((imageUrl) => toHistoryImageData(imageUrl, 480, 0.45)))
+    : [];
+  const compressedSelectedOutputImage =
+    compressedOutputImages[selectedIndex] ||
+    (entry.outputImage ? await toHistoryImageData(entry.outputImage, 480, 0.45) : '');
 
   return {
     ...entry,
     inputImage: compressedInputImage,
-    outputImage: compressedOutputImage,
-    outputImages: compressedOutputImage ? [compressedOutputImage] : undefined,
-    selectedOutputIndex: 0,
+    outputImage: compressedSelectedOutputImage,
+    outputImages: compressedOutputImages.length > 0 ? compressedOutputImages : undefined,
+    selectedOutputIndex: compressedOutputImages.length > 0 ? selectedIndex : 0,
   };
 };
 
@@ -482,19 +497,20 @@ export const saveNewGeneration = async (
 
   // Compress images before storage
   // Use a max width of 800px and 0.6 quality to keep size small
-  const persistentInputImage = await toPersistentImageData(inputImage);
-  
-  const persistentOutputImage = await toPersistentImageData(outputImage);
+  const persistentProjectInputImage = await toPersistentImageData(inputImage);
+  const persistentHistoryInputImage = await toHistoryImageData(inputImage, 640, 0.5);
   const normalizedOutputImages = Array.isArray(options?.allOutputImages) && options?.allOutputImages.length > 0
     ? options.allOutputImages
     : [outputImage];
   const persistentOutputImages = await Promise.all(
-    normalizedOutputImages.map((img) => toPersistentImageData(img))
+    normalizedOutputImages.map((img) => toHistoryImageData(img, 480, 0.45))
   );
   const selectedOutputIndex = Number.isFinite(options?.selectedOutputIndex)
     ? Math.max(0, Math.min(Number(options?.selectedOutputIndex), persistentOutputImages.length - 1))
     : 0;
-  const selectedOutputImage = persistentOutputImages[selectedOutputIndex] || persistentOutputImage;
+  const selectedOutputImage =
+    persistentOutputImages[selectedOutputIndex] ||
+    (outputImage ? await toHistoryImageData(outputImage, 480, 0.45) : '');
 
   let projectId: number;
   let version = 1;
@@ -509,7 +525,7 @@ export const saveNewGeneration = async (
     const newProject: Project = {
       id: projectId,
       userId,
-      originalImage: persistentInputImage,
+      originalImage: persistentProjectInputImage,
       createdAt: new Date().toISOString()
     };
 
@@ -531,10 +547,10 @@ export const saveNewGeneration = async (
     userId,
     username: normalizedUsername,
     prompt,
-    inputImage: persistentInputImage,
+    inputImage: persistentHistoryInputImage,
     outputImage: selectedOutputImage,
-    outputImages: selectedOutputImage ? [selectedOutputImage] : undefined,
-    selectedOutputIndex: 0,
+    outputImages: persistentOutputImages.length > 0 ? persistentOutputImages : undefined,
+    selectedOutputIndex,
     version,
     timestamp: new Date().toISOString(),
   };
