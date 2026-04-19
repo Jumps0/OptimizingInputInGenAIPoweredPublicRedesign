@@ -325,13 +325,15 @@ export const fetchPromptHistories = async (): Promise<EditHistory[]> => {
     const data = (await response.json()) as { history?: EditHistory[] };
     const history = Array.isArray(data.history) ? data.history : [];
 
-    if (history.length === 0 && localHistory.length > 0) {
-      return localHistory;
+    try {
+      safelySetItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+    } catch (storageError) {
+      console.warn('Failed to cache prompt history locally. Using remote response only.', storageError);
     }
 
-    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
     return history;
-  } catch {
+  } catch (error) {
+    console.warn('Failed to fetch prompt history from remote storage. Falling back to local browser storage.', error);
     return localHistory;
   }
 };
