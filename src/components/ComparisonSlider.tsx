@@ -61,6 +61,9 @@ const ComparisonSlider = ({
   return (
     <div className="w-full h-full flex items-center justify-center">
       <div className="w-full max-w-full max-h-[80vh] overflow-hidden rounded-lg shadow-lg relative">
+        <div className="pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-md bg-black/40 px-3 py-1.5 text-center text-xs font-medium text-white shadow-sm sm:text-sm">
+          Tap or drag over the image to move the slider
+        </div>
         <CompareImage
           leftImage={originalImage}
           rightImage={editedImage}
