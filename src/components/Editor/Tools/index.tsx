@@ -31,8 +31,9 @@ interface DragDropToolProps extends BaseToolProps {
   placedElements: DroppedElement[];
   onElementsChange: (elements: DroppedElement[]) => void;
   imageUrl?: string | null;
+  isDisabled?: boolean;
 }
 
-export const DragDropTool = ({ onPromptChange, prompt, placedElements, onElementsChange, imageUrl }: DragDropToolProps) => (
-  <DragDropEditor onPromptChange={onPromptChange} prompt={prompt} placedElements={placedElements} onElementsChange={onElementsChange} imageUrl={imageUrl} />
+export const DragDropTool = ({ onPromptChange, prompt, placedElements, onElementsChange, imageUrl, isDisabled = false }: DragDropToolProps) => (
+  <DragDropEditor onPromptChange={onPromptChange} prompt={prompt} placedElements={placedElements} onElementsChange={onElementsChange} imageUrl={imageUrl} isDisabled={isDisabled} />
 );

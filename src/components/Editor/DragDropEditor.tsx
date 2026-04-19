@@ -15,6 +15,7 @@ interface DragDropEditorProps {
   placedElements: DroppedElement[];
   onElementsChange: (elements: DroppedElement[]) => void;
   imageUrl?: string | null;
+  isDisabled?: boolean;
 }
 
 interface PointerDragState {
@@ -39,7 +40,7 @@ const DRAGGABLE_ELEMENTS = [
   { id: 'bikepath', label: 'Bike Path', icon: Bike },
 ];
 
-const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChange, imageUrl }: DragDropEditorProps) => {
+const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChange, imageUrl, isDisabled = false }: DragDropEditorProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [pointerDrag, setPointerDrag] = useState<PointerDragState | null>(null);
   const hasReachedStickerLimit = placedElements.length >= 3;
@@ -63,6 +64,12 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
   const clearPointerDrag = () => {
     setPointerDrag(null);
   };
+
+  useEffect(() => {
+    if (isDisabled && pointerDrag) {
+      clearPointerDrag();
+    }
+  }, [isDisabled, pointerDrag]);
 
   const createElementId = () => {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -178,6 +185,7 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
   }, [pointerDrag, placedElements, onElementsChange]);
 
   const handlePalettePointerDown = (e: React.PointerEvent, type: string, label: string) => {
+    if (isDisabled) return;
     if (e.button !== 0) return;
     if (placedElements.length >= 3) return;
 
@@ -193,6 +201,7 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
   };
 
   const handlePlacedElementPointerDown = (e: React.PointerEvent, element: DroppedElement) => {
+    if (isDisabled) return;
     if (e.button !== 0) return;
 
     e.preventDefault();
@@ -250,6 +259,14 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
               alt="Workspace" 
               className="max-w-full max-h-[600px] object-contain block pointer-events-none select-none" 
             />
+
+            {isDisabled ? (
+              <div className="absolute inset-0 z-30 flex items-center justify-center bg-gray-900/18 backdrop-blur-[1px] pointer-events-auto">
+                <div className="rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm">
+                  Generating preview...
+                </div>
+              </div>
+            ) : null}
             
             {/* Overlay Grid (Optional, visible on drag) */}
             {pointerDrag && (
@@ -285,8 +302,10 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (isDisabled) return;
                       removeElement(el.id);
                     }}
+                    disabled={isDisabled}
                     className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-100 sm:opacity-0 sm:group-hover/item:opacity-100 transition-opacity hover:bg-red-600 shadow-sm"
                   >
                     <X size={12} />
@@ -325,7 +344,11 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
               <div
                 key={element.id}
                 onPointerDown={(e) => handlePalettePointerDown(e, element.id, element.label)}
-                className="flex flex-col items-center justify-center p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-grab hover:bg-blue-50 hover:border-blue-200 hover:shadow-md transition-all active:cursor-grabbing group"
+                className={`flex flex-col items-center justify-center p-3 bg-gray-50 border border-gray-200 rounded-lg transition-all group ${
+                  isDisabled
+                    ? 'cursor-not-allowed opacity-50'
+                    : 'cursor-grab hover:bg-blue-50 hover:border-blue-200 hover:shadow-md active:cursor-grabbing'
+                }`}
                 style={{ touchAction: 'none' }}
               >
                 <div className="p-2 bg-white rounded-full mb-2 shadow-sm group-hover:scale-110 transition-transform">
@@ -354,9 +377,11 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
           </p>
           <button 
             onClick={() => {
+              if (isDisabled) return;
               onElementsChange([]);
               onPromptChange('');
             }}
+            disabled={isDisabled}
             className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1 px-3 py-1 hover:bg-red-50 rounded-lg transition-colors"
           >
             <Trash2 size={16} />

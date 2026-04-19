@@ -26,6 +26,8 @@ type VariantStatus = "loading" | "ready" | "error";
 type ResultVariant = {
   imageUrl: string | null;
   status: VariantStatus;
+  completedStages: number;
+  totalStages: number;
 };
 
 const OUTPUT_VARIANTS_COUNT = 3;
@@ -64,6 +66,11 @@ const EditorPage = () => {
     resultVariants[selectedVariantIndex]?.imageUrl ||
     resultVariants.find((variant) => variant.imageUrl)?.imageUrl ||
     null;
+
+  const selectedVariant = resultVariants[selectedVariantIndex] ?? null;
+  const isSelectedVariantGenerating = Boolean(
+    selectedVariant?.imageUrl && selectedVariant.status === "loading"
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -302,11 +309,56 @@ const EditorPage = () => {
     setFeedbackOpen(false);
     setFeedbackText("");
     setFeedbackThanks(false);
-    setResultVariants(Array.from({ length: OUTPUT_VARIANTS_COUNT }, () => ({ imageUrl: null, status: "loading" as const })));
+    const totalStages = activeTool === "dragdrop" ? Math.max(placedElements.length, 1) : 1;
+    setResultVariants(
+      Array.from({ length: OUTPUT_VARIANTS_COUNT }, () => ({
+        imageUrl: null,
+        status: "loading" as const,
+        completedStages: 0,
+        totalStages,
+      }))
+    );
     setSelectedVariantIndex(0);
     setStep("result");
 
-    const callImageGeneration = async (inputPrompt: string, previewUrl: string, _inpaintingLines: any[], _placedElements: any[]): Promise<string | null> => {
+    const livePreviewImages: Array<string | null> = Array.from({ length: OUTPUT_VARIANTS_COUNT }, () => null);
+
+    const updateVariantProgress = (
+      variantIndex: number,
+      imageUrl: string | null,
+      completedStages: number,
+      totalStages: number,
+      status: VariantStatus
+    ) => {
+      if (imageUrl) {
+        livePreviewImages[variantIndex] = imageUrl;
+      }
+
+      setResultVariants((prev) => {
+        const next = [...prev];
+        next[variantIndex] = {
+          imageUrl: imageUrl ?? next[variantIndex]?.imageUrl ?? null,
+          status,
+          completedStages,
+          totalStages,
+        };
+        return next;
+      });
+
+      if (imageUrl) {
+        setSelectedVariantIndex((currentIndex) => (
+          livePreviewImages[currentIndex] ? currentIndex : variantIndex
+        ));
+      }
+    };
+
+    const callImageGeneration = async (
+      inputPrompt: string,
+      previewUrl: string,
+      _inpaintingLines: any[],
+      _placedElements: any[],
+      onProgress?: (imageUrl: string, completedStages: number, totalStages: number) => void
+    ): Promise<string | null> => {
       console.log("...and running generation logic...");
 
       if(false){ // Pop-out this code to disable AI image editing
@@ -445,6 +497,7 @@ const EditorPage = () => {
           let currentImageUrl = requestImageUrl;
           let currentEncodedImage = encodedImage;
           let outputUrl: string | null = null;
+          const totalStages = _placedElements.length;
 
           // Loop through each element and modify one at a time
           for (let i = 0; i < _placedElements.length; i += 1) {
@@ -482,6 +535,7 @@ const EditorPage = () => {
             }
 
             console.log(`Sticker ${i + 1} applied.`);
+            onProgress?.(reusableOutputUrl, i + 1, totalStages);
             currentImageUrl = await getRequestImageDataUrl(reusableOutputUrl);
             currentEncodedImage = currentImageUrl.split(',')[1] || '';
             outputUrl = reusableOutputUrl;
@@ -504,20 +558,33 @@ const EditorPage = () => {
 
       await Promise.all(
         Array.from({ length: OUTPUT_VARIANTS_COUNT }, async (_, variantIndex) => {
-          const generatedImage = await callImageGeneration(prompt, previewUrl, inpaintingLines, placedElements);
+          const generatedImage = await callImageGeneration(
+            prompt,
+            previewUrl,
+            inpaintingLines,
+            placedElements,
+            (imageUrl, completedStages, totalStages) => {
+              updateVariantProgress(variantIndex, imageUrl, completedStages, totalStages, completedStages >= totalStages ? "ready" : "loading");
+            }
+          );
           generatedResults[variantIndex] = generatedImage;
 
-          setResultVariants((prev) => {
-            const next = [...prev];
-            next[variantIndex] = {
-              imageUrl: generatedImage,
-              status: generatedImage ? "ready" : "error",
-            };
-            return next;
-          });
-
           if (generatedImage) {
-            setSelectedVariantIndex((currentIndex) => (generatedResults[currentIndex] ? currentIndex : variantIndex));
+            updateVariantProgress(
+              variantIndex,
+              generatedImage,
+              activeTool === "dragdrop" ? Math.max(placedElements.length, 1) : 1,
+              activeTool === "dragdrop" ? Math.max(placedElements.length, 1) : 1,
+              "ready"
+            );
+          } else {
+            updateVariantProgress(
+              variantIndex,
+              null,
+              0,
+              activeTool === "dragdrop" ? Math.max(placedElements.length, 1) : 1,
+              "error"
+            );
           }
         })
       );
@@ -588,6 +655,7 @@ const EditorPage = () => {
             placedElements={placedElements}
             onElementsChange={setPlacedElements}
             imageUrl={previewUrl}
+            isDisabled={isGenerating}
           />
         );
 
@@ -846,10 +914,23 @@ const EditorPage = () => {
 
         <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden ring-4 ring-white min-h-[280px] sm:min-h-[360px]">
           {selectedResultImage ? (
-            <ComparisonSlider
-              originalImage={previewUrl}
-              editedImage={selectedResultImage}
-            />
+            <div className="relative">
+              <ComparisonSlider
+                originalImage={previewUrl}
+                editedImage={selectedResultImage}
+              />
+              {isSelectedVariantGenerating ? (
+                <div className="absolute inset-0 z-10 flex items-start justify-between gap-3 bg-gray-900/12 px-4 py-4 pointer-events-none">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm backdrop-blur-sm">
+                    <Loader2 size={14} className="animate-spin text-gray-500" />
+                    Applying sticker {selectedVariant?.completedStages ?? 0} of {selectedVariant?.totalStages ?? 0}
+                  </span>
+                  <span className="inline-flex rounded-full bg-gray-800/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+                    Preview updating
+                  </span>
+                </div>
+              ) : null}
+            </div>
           ) : (
             <div className="h-full min-h-[280px] sm:min-h-[360px] flex flex-col items-center justify-center gap-3 px-5 text-gray-500 bg-gray-50">
               <Loader2 size={28} className="animate-spin text-emerald-600" />
@@ -868,16 +949,19 @@ const EditorPage = () => {
               <button
                 key={`variant-${index}`}
                 type="button"
-                disabled={!isReady}
-                onClick={() => setSelectedVariantIndex(index)}
+                disabled={!isReady || isGenerating}
+                onClick={() => {
+                  if (isGenerating) return;
+                  setSelectedVariantIndex(index);
+                }}
                 className={`relative overflow-hidden rounded-xl border text-left transition-all ${
                   isSelected
                     ? "border-emerald-500 ring-2 ring-emerald-400/40 shadow-md"
                     : "border-gray-200 hover:border-gray-300"
-                } ${!isReady ? "cursor-not-allowed" : "cursor-pointer"}`}
+                } ${!isReady || isGenerating ? "cursor-not-allowed" : "cursor-pointer"}`}
               >
                 <div className="aspect-square bg-gray-100 flex items-center justify-center">
-                  {isReady && variant.imageUrl ? (
+                  {variant.imageUrl ? (
                     <img src={variant.imageUrl} alt={`Generated option ${index + 1}`} className="w-full h-full object-cover" />
                   ) : variant.status === "error" ? (
                     <div className="flex flex-col items-center gap-2 text-gray-500">
@@ -889,6 +973,17 @@ const EditorPage = () => {
                     </div>
                   )}
                 </div>
+
+                {variant.status === "loading" ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gray-900/18 text-white pointer-events-none">
+                    <Loader2 size={18} className="animate-spin" />
+                    <span className="rounded-full bg-gray-800/70 px-2.5 py-1 text-[11px] font-semibold backdrop-blur-sm">
+                      {variant.imageUrl
+                        ? `Applying sticker ${variant.completedStages} of ${variant.totalStages}`
+                        : "Generating preview"}
+                    </span>
+                  </div>
+                ) : null}
 
                 {isSelected && isReady ? (
                   <div className="absolute inset-0 pointer-events-none">
