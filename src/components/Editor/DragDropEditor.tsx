@@ -42,6 +42,7 @@ const DRAGGABLE_ELEMENTS = [
 const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChange, imageUrl }: DragDropEditorProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [pointerDrag, setPointerDrag] = useState<PointerDragState | null>(null);
+  const hasReachedStickerLimit = placedElements.length >= 3;
 
 
   // Update prompt whenever elements change
@@ -105,6 +106,11 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
       );
       onElementsChange(updatedElements);
     } else {
+      if (placedElements.length >= 3) {
+        clearPointerDrag();
+        return;
+      }
+
       const newElement: DroppedElement = {
         id: createElementId(),
         type: pointerDrag.type,
@@ -173,6 +179,7 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
 
   const handlePalettePointerDown = (e: React.PointerEvent, type: string, label: string) => {
     if (e.button !== 0) return;
+    if (placedElements.length >= 3) return;
 
     e.preventDefault();
     setPointerDrag({
@@ -304,24 +311,32 @@ const DragDropEditor = ({ prompt, onPromptChange, placedElements, onElementsChan
       </div>
 
       {/* Toolbar */}
-      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Available Elements</h3>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-          {DRAGGABLE_ELEMENTS.map((element) => (
-            <div
-              key={element.id}
-              onPointerDown={(e) => handlePalettePointerDown(e, element.id, element.label)}
-              className="flex flex-col items-center justify-center p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-grab hover:bg-blue-50 hover:border-blue-200 hover:shadow-md transition-all active:cursor-grabbing group"
-              style={{ touchAction: 'none' }}
-            >
-              <div className="p-2 bg-white rounded-full mb-2 shadow-sm group-hover:scale-110 transition-transform">
-                <element.icon size={20} className="text-gray-700 group-hover:text-blue-600" />
-              </div>
-              <span className="text-xs font-medium text-gray-600 group-hover:text-blue-700">{element.label}</span>
-            </div>
-          ))}
+      {hasReachedStickerLimit ? (
+        <div className="bg-orange-50 p-4 rounded-xl border border-orange-200 shadow-sm">
+          <p className="text-sm font-semibold text-orange-600 text-center">
+            Max of 3 stickers at a time. Generate and refine to add more.
+          </p>
         </div>
-      </div>
+      ) : (
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Available Elements</h3>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+            {DRAGGABLE_ELEMENTS.map((element) => (
+              <div
+                key={element.id}
+                onPointerDown={(e) => handlePalettePointerDown(e, element.id, element.label)}
+                className="flex flex-col items-center justify-center p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-grab hover:bg-blue-50 hover:border-blue-200 hover:shadow-md transition-all active:cursor-grabbing group"
+                style={{ touchAction: 'none' }}
+              >
+                <div className="p-2 bg-white rounded-full mb-2 shadow-sm group-hover:scale-110 transition-transform">
+                  <element.icon size={20} className="text-gray-700 group-hover:text-blue-600" />
+                </div>
+                <span className="text-xs font-medium text-gray-600 group-hover:text-blue-700">{element.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* Instructions / Tips */}
       <div className="bg-blue-100 border border-blue-200 text-blue-700 p-4 rounded-lg shadow-sm">
