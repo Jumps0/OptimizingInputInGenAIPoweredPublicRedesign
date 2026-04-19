@@ -71,6 +71,10 @@ const GalleryPage = () => {
         </button>
       </div>
 
+      <p className="mb-5 px-1 text-sm italic text-blue-700">
+        Once you have modified four separate images, click the button below to fill out the post-study form and finish.
+      </p>
+
       {items.length === 0 ? (
         <div className="bg-white border border-dashed border-gray-300 rounded-xl p-8 md:p-12 text-center text-gray-500">
           No edited images yet. Create one from the editor.
