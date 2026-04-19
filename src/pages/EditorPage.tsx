@@ -810,47 +810,44 @@ const EditorPage = () => {
           </span>
         </div>
 
-        <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/90 via-white to-teal-50/40 p-5 sm:p-6 shadow-sm space-y-4">
-          {isGenerationComplete ? (
-            <>
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-semibold text-gray-900">Image generation complete!</p>
-                <p className="text-xs text-gray-600">
-                  You may now exit to the Gallery and see the selected photo(s) you have generated, restart with the same original photo, or go back to the editor to refine the image you have selected further.
-                </p>
-              </div>
+        {isGenerationComplete ? (
+          <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/90 via-white to-teal-50/40 p-5 sm:p-6 shadow-sm space-y-4">
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-semibold text-gray-900">Image generation complete!</p>
+              <p className="text-xs text-gray-600">
+                You may now exit to the Gallery and see the selected photo(s) you have generated, restart with the same original photo, or go back to the editor to refine the image you have selected further.
+              </p>
+            </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleExitGallery()}
-                  disabled={!selectedResultImage || isGenerating || isSavingSelection}
-                  className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-gray-900 text-white font-semibold shadow-lg hover:bg-black hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                >
-                  Exit to Gallery
-                </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                type="button"
+                onClick={() => handleExitGallery()}
+                disabled={!selectedResultImage || isGenerating || isSavingSelection}
+                className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-gray-900 text-white font-semibold shadow-lg hover:bg-black hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                Exit to Gallery
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleRestart()}
-                  className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl border border-gray-200 bg-white text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm hover:shadow"
-                >
-                  <RotateCcw size={18} />
-                  Restart
-                </button>
+              <button
+                type="button"
+                onClick={() => handleRestart()}
+                className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl border border-gray-200 bg-white text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm hover:shadow"
+              >
+                <RotateCcw size={18} />
+                Restart
+              </button>
 
-                <button
-                  type="button"
-                  onClick={handleRefineResult}
-                  disabled={!selectedResultImage || isGenerating || isSavingSelection}
-                  className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-emerald-600 text-white font-semibold shadow-md hover:bg-emerald-700 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                >
-                  <Sparkles size={18} />
-                  Refine Selected Result
-                </button>
-              </div>
-            </>
-          ) : null}
+              <button
+                type="button"
+                onClick={handleRefineResult}
+                disabled={!selectedResultImage || isGenerating || isSavingSelection}
+                className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-emerald-600 text-white font-semibold shadow-md hover:bg-emerald-700 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                <Sparkles size={18} />
+                Refine Selected Result
+              </button>
+            </div>
 
           
             {/*
@@ -917,7 +914,8 @@ const EditorPage = () => {
               Thank you — your feedback was saved and will appear in the admin dashboard.
             </p>
           )}
-        </div>
+          </div>
+        ) : null}
 
         <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden ring-4 ring-white min-h-[280px] sm:min-h-[360px]">
           {selectedResultImage ? (
