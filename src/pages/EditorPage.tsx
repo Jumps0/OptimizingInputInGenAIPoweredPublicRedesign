@@ -177,8 +177,8 @@ const EditorPage = () => {
       params.set('polling_url', String(pollingUrl));
     }
 
-    // Image2Image takes ~11. Inpainting takes more than 20.
-    const maxAttempts = 60;
+    // Image2Image takes ~11. Inpainting takes more than 20. Though drag and drop can take A LONG TIME somewhat often.
+    const maxAttempts = 90;
     let attempt = 0;
 
     while (attempt < maxAttempts) {
