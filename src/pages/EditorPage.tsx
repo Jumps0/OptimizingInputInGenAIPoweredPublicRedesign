@@ -973,9 +973,7 @@ const EditorPage = () => {
                       <ImageOff size={20} />
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center gap-2 text-gray-500">
-                      <Loader2 size={20} className="animate-spin" />
-                    </div>
+                    <div className="h-full w-full bg-gray-100" />
                   )}
                 </div>
 
