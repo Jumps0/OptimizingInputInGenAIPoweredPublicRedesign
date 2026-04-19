@@ -1167,7 +1167,7 @@ const AdminPage = () => {
                             <td className="p-4 max-w-sm">
                               <p className="text-sm text-gray-700">
                                 Age: <span className="font-semibold text-gray-900">{f.responses.age || '—'}</span>
-                                 Gender: <span className="font-semibold text-gray-900">{f.responses.gender || '—'}</span>
+                                Gender: <span className="font-semibold text-gray-900">{f.responses.gender || '—'}</span>
                               </p>
                               <p className="text-sm text-gray-700">
                                 Aware of AI: <span className="font-semibold text-gray-900">{f.responses.awareOfAI || '—'}</span>
