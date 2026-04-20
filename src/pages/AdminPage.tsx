@@ -51,6 +51,8 @@ const defaultMethodFilters: MethodFilterState = {
   dragdrop: true,
 };
 
+const ITEMS_PER_PAGE = 16;
+
 const csvEscape = (value: unknown) => {
   const normalized = String(value ?? '').replace(/\r?\n|\r/g, ' ');
   return `"${normalized.replace(/"/g, '""')}"`;
@@ -79,6 +81,11 @@ const AdminPage = () => {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [methodFilters, setMethodFilters] = useState<MethodFilterState>(defaultMethodFilters);
+  const [currentPageByTab, setCurrentPageByTab] = useState<Record<'users' | 'prompts' | 'feedback', number>>({
+    users: 1,
+    prompts: 1,
+    feedback: 1,
+  });
 
   useEffect(() => {
     let isCancelled = false;
@@ -268,6 +275,72 @@ const AdminPage = () => {
       ].some((field) => field.toLowerCase().includes(q));
     });
   }, [postStudyResponses, searchTerm, userNameById, userMethodById, methodFilters]);
+
+  const totalItemsForActiveTab =
+    activeTab === 'users'
+      ? filteredUsers.length
+      : activeTab === 'prompts'
+        ? filteredHistory.length
+        : filteredFeedbacks.length;
+
+  const totalPagesForActiveTab = Math.max(1, Math.ceil(totalItemsForActiveTab / ITEMS_PER_PAGE));
+  const currentPage = Math.min(currentPageByTab[activeTab], totalPagesForActiveTab);
+  const paginationStartIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginationEndIndex = paginationStartIndex + ITEMS_PER_PAGE;
+
+  const paginatedUsers = useMemo(
+    () => filteredUsers.slice(paginationStartIndex, paginationEndIndex),
+    [filteredUsers, paginationStartIndex, paginationEndIndex]
+  );
+
+  const paginatedHistory = useMemo(
+    () => filteredHistory.slice(paginationStartIndex, paginationEndIndex),
+    [filteredHistory, paginationStartIndex, paginationEndIndex]
+  );
+
+  const paginatedFeedbacks = useMemo(
+    () => filteredFeedbacks.slice(paginationStartIndex, paginationEndIndex),
+    [filteredFeedbacks, paginationStartIndex, paginationEndIndex]
+  );
+
+  useEffect(() => {
+    setCurrentPageByTab((prev) => ({
+      ...prev,
+      [activeTab]: 1,
+    }));
+  }, [activeTab, searchTerm, methodFilters]);
+
+  useEffect(() => {
+    setCurrentPageByTab((prev) => {
+      const nextPage = Math.min(prev[activeTab], totalPagesForActiveTab);
+      if (nextPage === prev[activeTab]) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [activeTab]: nextPage,
+      };
+    });
+  }, [activeTab, totalPagesForActiveTab]);
+
+  const changePage = (direction: 'previous' | 'next') => {
+    setCurrentPageByTab((prev) => {
+      const current = prev[activeTab];
+      const nextPage = direction === 'previous'
+        ? Math.max(1, current - 1)
+        : Math.min(totalPagesForActiveTab, current + 1);
+
+      if (nextPage === current) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [activeTab]: nextPage,
+      };
+    });
+  };
 
   const toggleMethodFilter = (method: keyof MethodFilterState) => {
     setMethodFilters((prev) => ({
@@ -772,8 +845,8 @@ const AdminPage = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {filteredUsers.length > 0 ? (
-                        filteredUsers.map(user => (
+                      {paginatedUsers.length > 0 ? (
+                        paginatedUsers.map(user => (
                           <tr key={user.id} className="hover:bg-gray-50/50 transition-colors group">
                             <td className="p-4">
                               <div className="flex items-center gap-3">
@@ -883,8 +956,8 @@ const AdminPage = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50">
-                        {filteredHistory.length > 0 ? (
-                          filteredHistory.map(item => (
+                        {paginatedHistory.length > 0 ? (
+                          paginatedHistory.map(item => (
                             (() => {
                               const historyUserName = getHistoryUserName(item);
                               const outputImages = getHistoryOutputImages(item);
@@ -1015,9 +1088,9 @@ const AdminPage = () => {
                     </table>
                   ) : (
                     <div className="p-6">
-                      {filteredHistory.length > 0 ? (
+                      {paginatedHistory.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                          {filteredHistory.map(item => (
+                          {paginatedHistory.map(item => (
                             (() => {
                               const historyUserName = getHistoryUserName(item);
                               const outputImages = getHistoryOutputImages(item);
@@ -1147,8 +1220,8 @@ const AdminPage = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {filteredFeedbacks.length > 0 ? (
-                        filteredFeedbacks.map((f) => (
+                      {paginatedFeedbacks.length > 0 ? (
+                        paginatedFeedbacks.map((f) => (
                           <tr key={f.id} className="hover:bg-gray-50/50 align-top">
                             <td className="p-4 whitespace-nowrap">
                               <span className="text-sm font-medium text-gray-900">
@@ -1231,23 +1304,31 @@ const AdminPage = () => {
           {/* Pagination Footer */}
           <div className="p-4 border-t border-gray-200 bg-gray-50/50 flex items-center justify-between">
             <span className="text-sm text-gray-500">
-              Showing <span className="font-medium text-gray-900">1</span> to{' '}
+              Showing <span className="font-medium text-gray-900">{totalItemsForActiveTab === 0 ? 0 : paginationStartIndex + 1}</span> to{' '}
               <span className="font-medium text-gray-900">
-                {activeTab === 'users'
-                  ? filteredUsers.length
-                  : activeTab === 'prompts'
-                    ? filteredHistory.length
-                    : filteredFeedbacks.length}
+                {Math.min(paginationEndIndex, totalItemsForActiveTab)}
               </span>{' '}
               of{' '}
               <span className="font-medium text-gray-900">
-                {activeTab === 'users' ? users.length : activeTab === 'prompts' ? history.length : postStudyResponses.length}
+                {totalItemsForActiveTab}
               </span>{' '}
               results
             </span>
             <div className="flex gap-2">
-              <button disabled className="px-3 py-1 text-sm text-gray-400 bg-white border border-gray-200 rounded shadow-sm cursor-not-allowed">Previous</button>
-              <button disabled className="px-3 py-1 text-sm text-gray-400 bg-white border border-gray-200 rounded shadow-sm cursor-not-allowed">Next</button>
+              <button
+                onClick={() => changePage('previous')}
+                disabled={currentPage <= 1}
+                className="px-3 py-1 text-sm bg-white border border-gray-200 rounded shadow-sm transition-colors disabled:text-gray-400 disabled:cursor-not-allowed enabled:text-gray-700 enabled:hover:bg-gray-100"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => changePage('next')}
+                disabled={currentPage >= totalPagesForActiveTab}
+                className="px-3 py-1 text-sm bg-white border border-gray-200 rounded shadow-sm transition-colors disabled:text-gray-400 disabled:cursor-not-allowed enabled:text-gray-700 enabled:hover:bg-gray-100"
+              >
+                Next
+              </button>
             </div>
           </div>
         </div>
