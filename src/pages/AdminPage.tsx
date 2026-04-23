@@ -44,12 +44,24 @@ type MethodFilterState = {
   dragdrop: boolean;
 };
 
+type MethodKey = keyof MethodFilterState;
+
 const defaultMethodFilters: MethodFilterState = {
   text: true,
   voice: true,
   inpainting: true,
   dragdrop: true,
 };
+
+const methodBadgeClassByMethod: Record<MethodKey, string> = {
+  text: 'bg-blue-500 text-white',
+  voice: 'bg-green-500 text-white',
+  inpainting: 'bg-orange-500 text-white',
+  dragdrop: 'bg-pink-500 text-white',
+};
+
+const isMethodKey = (value: string): value is MethodKey =>
+  value === 'text' || value === 'voice' || value === 'inpainting' || value === 'dragdrop';
 
 const ITEMS_PER_PAGE = 16;
 
@@ -181,12 +193,20 @@ const AdminPage = () => {
   }, [users]);
 
   const userMethodById = useMemo(() => {
-    const m = new Map<number, keyof MethodFilterState>();
+    const m = new Map<number, MethodKey>();
     users.forEach((u) => {
-      m.set(u.id, (u.assignedMethod || 'text') as keyof MethodFilterState);
+      m.set(u.id, (u.assignedMethod || 'text') as MethodKey);
     });
     return m;
   }, [users]);
+
+  const getEntryMethod = (entry: EditHistory): MethodKey => {
+    const directMethod = (entry as EditHistory & { assignedMethod?: string }).assignedMethod;
+    if (directMethod && isMethodKey(directMethod)) {
+      return directMethod;
+    }
+    return userMethodById.get(entry.userId) || 'text';
+  };
 
   const getHistoryUserName = (entry: EditHistory) => {
     const savedName = entry.username?.trim();
@@ -978,7 +998,10 @@ const AdminPage = () => {
                               </td>
                               <td className="p-4 align-top">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-6 h-6 rounded-full bg-e-100 text-e-600 flex items-center justify-center text-xs font-bold">
+                                  <div className={cn(
+                                    'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
+                                    methodBadgeClassByMethod[getEntryMethod(item)]
+                                  )}>
                                     {userInitials}
                                   </div>
                                   <span className="text-sm text-gray-700 font-medium">{historyUserName}</span>
@@ -1150,7 +1173,10 @@ const AdminPage = () => {
                               <div className="p-4 flex-1 flex flex-col">
                                 <div className="flex items-start justify-between gap-2 mb-3">
                                   <div className="flex items-center gap-2">
-                                    <div className="rounded-full  bg-cyan-500 px-2 py-1 text-e-600 text-sm font-semibold border">
+                                    <div className={cn(
+                                      'rounded-full px-2 py-1 text-sm font-semibold border border-transparent',
+                                      methodBadgeClassByMethod[getEntryMethod(item)]
+                                    )}>
                                       {historyUserName}
                                     </div>
                                     <span className="text-xs text-gray-500 font-medium">User #{item.userId}</span>
