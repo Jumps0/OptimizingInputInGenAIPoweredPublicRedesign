@@ -815,7 +815,7 @@ const EditorPage = () => {
             <div className="flex flex-col gap-1">
               <p className="text-sm font-semibold text-gray-900">Image generation complete!</p>
               <p className="text-xs text-gray-600">
-                You may now exit to the Gallery and see the selected photo(s) you have generated, restart with the same original photo, or go back to the editor to refine the image you have selected further.
+                You may now save and exit to the Gallery to see the selected photo(s) you have generated, restart with the same original photo, or go back to the editor to refine the image you have selected further.
               </p>
             </div>
 
@@ -826,7 +826,7 @@ const EditorPage = () => {
                 disabled={!selectedResultImage || isGenerating || isSavingSelection}
                 className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-emerald-600 text-white font-semibold shadow-md hover:bg-emerald-700 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                Exit to Gallery
+                Save and exit to Gallery
               </button>
 
               <button

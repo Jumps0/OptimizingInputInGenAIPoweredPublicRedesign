@@ -52,7 +52,7 @@ const WelcomePage = () => {
 					Take a photo, then input clear instructions describing what you want changed in the image. Hit the <span className="text-base leading-7 text-slate-700 font-semibold">"Generate"</span> button, 
 					This process takes <span className="text-base leading-7 text-slate-700 font-semibold">10 to 30 seconds</span>.
 					After the generation is done, the app will display <span className="text-base leading-7 text-slate-700 font-semibold">three variants</span> for you to choose from. You can tap on an image to <span className="text-base leading-7 text-slate-700 font-semibold">select it</span>, and then compare it with your original input photo.
-					At this point you can choose to start over with the same initial image, continue refining the selected image with more edits, or finish editing the selected image and <span className="text-base leading-7 text-slate-700 font-semibold">exit to the gallery.</span>
+					At this point you can choose to start over with the same initial image, continue refining the selected image with more edits, or finish editing the selected image and <span className="text-base leading-7 text-slate-700 font-semibold">save and exit to the gallery.</span>
 				</p>
 
 				<div className="rounded-lg border border-orange-300 bg-orange-100/50 p-4">
