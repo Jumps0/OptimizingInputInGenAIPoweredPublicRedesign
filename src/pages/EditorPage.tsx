@@ -259,11 +259,13 @@ const EditorPage = () => {
       return;
     }
 
-    setBackExitAction(() => handleBack);
+    setBackExitAction(() => () => {
+      navigate("/gallery");
+    });
     return () => {
       setBackExitAction(null);
     };
-  }, [handleBack, isEditingSessionActive, setBackExitAction]);
+  }, [isEditingSessionActive, navigate, setBackExitAction]);
 
   // const handleSuggestionSelect = (url: string) => {
   //   setPreviewUrl(url);
