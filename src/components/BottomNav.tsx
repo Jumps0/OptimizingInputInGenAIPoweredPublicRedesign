@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "@/context";
+import { useAuth, useNavigationGuard } from "@/context";
 import { GalleryHorizontalEnd, LogOut, Shield, Wand2 } from "lucide-react";
 
 const itemBaseClass =
@@ -12,13 +12,22 @@ const BottomNav = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { confirmOrRun } = useNavigationGuard();
 
   const isActive = (path: string) => location.pathname === path;
   const isAdmin = user?.role === "admin";
 
+  const guardedNavigate = (path: string) => {
+    confirmOrRun(() => {
+      navigate(path);
+    });
+  };
+
   const handleLogout = () => {
-    logout();
-    navigate("/login", { replace: true });
+    confirmOrRun(() => {
+      logout();
+      navigate("/login", { replace: true });
+    });
   };
 
   return (
@@ -35,6 +44,10 @@ const BottomNav = () => {
         <div className={`mx-auto ${isAdmin ? "grid grid-cols-4" : "grid grid-cols-3"} gap-2`}>
           <Link
             to="/editor"
+            onClick={(event) => {
+              event.preventDefault();
+              guardedNavigate("/editor");
+            }}
             className={`${itemBaseClass} ${isActive("/editor") ? activeClass : inactiveClass}`}
             aria-label="Editor"
           >
@@ -44,6 +57,10 @@ const BottomNav = () => {
 
           <Link
             to="/gallery"
+            onClick={(event) => {
+              event.preventDefault();
+              guardedNavigate("/gallery");
+            }}
             className={`${itemBaseClass} ${isActive("/gallery") ? activeClass : inactiveClass}`}
             aria-label="Gallery"
           >
@@ -54,6 +71,10 @@ const BottomNav = () => {
           {isAdmin ? (
             <Link
               to="/admin"
+              onClick={(event) => {
+                event.preventDefault();
+                guardedNavigate("/admin");
+              }}
               className={`${itemBaseClass} ${isActive("/admin") ? activeClass : inactiveClass}`}
               aria-label="Admin"
             >

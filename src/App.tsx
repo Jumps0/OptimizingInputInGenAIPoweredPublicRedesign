@@ -5,7 +5,7 @@ import AdminPage from "./pages/AdminPage";
 import WelcomePage from "./pages/WelcomePage";
 // import PostStudyFormPage from "./pages/PostStudyFormPage";
 import Login from "./components/Auth/Login";
-import { AuthProvider, useAuth } from "./context";
+import { AuthProvider, NavigationGuardProvider, useAuth } from "./context";
 import ScrollToTop from "./components/ScrollToTop";
 import Layout from "./components/Layout";
 import "./App.css";
@@ -134,8 +134,10 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <ScrollToTop />
-        <AppRoutes />
+        <NavigationGuardProvider>
+          <ScrollToTop />
+          <AppRoutes />
+        </NavigationGuardProvider>
       </Router>
     </AuthProvider>
   );

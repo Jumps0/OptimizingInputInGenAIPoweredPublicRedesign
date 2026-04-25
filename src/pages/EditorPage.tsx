@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ImageCapture from "@/components/ImageCapture";
-import { useAuth } from "@/context";
+import { useAuth, useNavigationGuard } from "@/context";
 import { saveNewGeneration, addResultFeedback } from "@/utils";
 import { TextTool, VoiceTool, InpaintingTool, DragDropTool } from "@/components/Editor/Tools";
 import type { LineType } from "@/components/Editor/InpaintingEditor";
@@ -34,6 +34,7 @@ const OUTPUT_VARIANTS_COUNT = 3;
 
 const EditorPage = () => {
   const { user } = useAuth();
+  const { setGuardEnabled } = useNavigationGuard();
   const navigate = useNavigate();
 
   const isAdmin = user?.role === "admin";
@@ -71,6 +72,15 @@ const EditorPage = () => {
   const isSelectedVariantGenerating = Boolean(
     selectedVariant?.imageUrl && selectedVariant.status === "loading"
   );
+
+  const isEditingSessionActive = step !== "upload" && Boolean(previewUrl);
+
+  useEffect(() => {
+    setGuardEnabled(isEditingSessionActive);
+    return () => {
+      setGuardEnabled(false);
+    };
+  }, [isEditingSessionActive, setGuardEnabled]);
 
   useEffect(() => {
     if (!user) return;

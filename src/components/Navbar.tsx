@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "@/context";
+import { useAuth, useNavigationGuard } from "@/context";
 import { GalleryHorizontalEnd, Shield, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,10 +20,19 @@ const NavLabel = ({ children }: { children: ReactNode }) => (
 const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { confirmOrRun } = useNavigationGuard();
+
+  const guardedNavigate = (path: string) => {
+    confirmOrRun(() => {
+      navigate(path);
+    });
+  };
 
   const handleLogout = () => {
-    logout();
-    navigate("/login", { replace: true });
+    confirmOrRun(() => {
+      logout();
+      navigate("/login", { replace: true });
+    });
   };
 
   const linkFocus =
@@ -37,7 +46,14 @@ const Navbar = () => {
       <div className="max-w-6xl mx-auto my-3 sm:my-5 rounded-2xl sm:rounded-full border border-emerald-100/80 bg-white/90 backdrop-blur-xl shadow-[0_12px_30px_rgba(16,185,129,0.16)] px-2.5 py-2.5 sm:px-4 sm:py-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div className="flex flex-wrap items-center justify-center gap-2 min-w-0 sm:justify-start sm:flex-1">
-        <NavLink to="/editor" className={linkFocus}>
+        <NavLink
+          to="/editor"
+          className={linkFocus}
+          onClick={(event) => {
+            event.preventDefault();
+            guardedNavigate("/editor");
+          }}
+        >
           {({ isActive }) => (
             <div className={navPillClass(isActive)}>
           <Wand2 className="w-4 h-4 shrink-0" aria-hidden />
@@ -46,7 +62,14 @@ const Navbar = () => {
           )}
         </NavLink>
 
-        <NavLink to="/gallery" className={linkFocus}>
+        <NavLink
+          to="/gallery"
+          className={linkFocus}
+          onClick={(event) => {
+            event.preventDefault();
+            guardedNavigate("/gallery");
+          }}
+        >
           {({ isActive }) => (
             <div className={navPillClass(isActive)}>
           <GalleryHorizontalEnd className="w-4 h-4 shrink-0" aria-hidden />
@@ -56,7 +79,14 @@ const Navbar = () => {
         </NavLink>
 
         {user?.role === "admin" && (
-          <NavLink to="/admin" className={linkFocus}>
+          <NavLink
+            to="/admin"
+            className={linkFocus}
+            onClick={(event) => {
+              event.preventDefault();
+              guardedNavigate("/admin");
+            }}
+          >
             {({ isActive }) => (
           <div className={navPillClass(isActive)}>
             <Shield className="w-4 h-4 shrink-0" aria-hidden />
