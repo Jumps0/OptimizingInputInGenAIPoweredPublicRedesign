@@ -34,7 +34,7 @@ const OUTPUT_VARIANTS_COUNT = 3;
 
 const EditorPage = () => {
   const { user } = useAuth();
-  const { setGuardEnabled } = useNavigationGuard();
+  const { setGuardEnabled, setBackExitAction } = useNavigationGuard();
   const navigate = useNavigate();
 
   const isAdmin = user?.role === "admin";
@@ -252,6 +252,18 @@ const EditorPage = () => {
       setFeedbackThanks(false);
     }
   };
+
+  useEffect(() => {
+    if (!isEditingSessionActive) {
+      setBackExitAction(null);
+      return;
+    }
+
+    setBackExitAction(() => handleBack);
+    return () => {
+      setBackExitAction(null);
+    };
+  }, [handleBack, isEditingSessionActive, setBackExitAction]);
 
   // const handleSuggestionSelect = (url: string) => {
   //   setPreviewUrl(url);

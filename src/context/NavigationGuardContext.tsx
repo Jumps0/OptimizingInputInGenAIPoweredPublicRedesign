@@ -4,6 +4,7 @@ type NavigationGuardContextType = {
   isGuardEnabled: boolean;
   setGuardEnabled: (enabled: boolean) => void;
   confirmOrRun: (action: () => void) => void;
+  setBackExitAction: (action: (() => void) | null) => void;
 };
 
 const NavigationGuardContext = createContext<NavigationGuardContextType | undefined>(undefined);
@@ -13,6 +14,7 @@ export const NavigationGuardProvider = ({ children }: { children: ReactNode }) =
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const isGuardEnabledRef = useRef(isGuardEnabled);
+  const backExitActionRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     isGuardEnabledRef.current = isGuardEnabled;
@@ -44,6 +46,10 @@ export const NavigationGuardProvider = ({ children }: { children: ReactNode }) =
     []
   );
 
+  const setBackExitAction = useCallback((action: (() => void) | null) => {
+    backExitActionRef.current = action;
+  }, []);
+
   useEffect(() => {
     if (!isGuardEnabled) {
       return;
@@ -57,9 +63,17 @@ export const NavigationGuardProvider = ({ children }: { children: ReactNode }) =
         return;
       }
 
-      setPendingAction(() => () => {
-        setGuardEnabled(false);
-        window.history.back();
+      setPendingAction(() => {
+        if (backExitActionRef.current) {
+          return () => {
+            backExitActionRef.current?.();
+          };
+        }
+
+        return () => {
+          setGuardEnabled(false);
+          window.history.back();
+        };
       });
       setIsDialogOpen(true);
       window.history.pushState({ __editGuard: true }, "", window.location.href);
@@ -76,8 +90,9 @@ export const NavigationGuardProvider = ({ children }: { children: ReactNode }) =
       isGuardEnabled,
       setGuardEnabled,
       confirmOrRun,
+      setBackExitAction,
     }),
-    [confirmOrRun, isGuardEnabled]
+    [confirmOrRun, isGuardEnabled, setBackExitAction]
   );
 
   return (
