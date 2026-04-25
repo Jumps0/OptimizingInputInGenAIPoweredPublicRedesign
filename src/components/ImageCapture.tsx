@@ -22,10 +22,25 @@ const ImageCapture = ({ onImageSelect }: ImageCaptureProps) => {
   const streamRef = useRef<MediaStream | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string>("");
+  const [isLandscape, setIsLandscape] = useState(window.innerHeight < window.innerWidth);
 
   useEffect(() => {
     return () => {
       streamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleOrientationChange = () => {
+      setIsLandscape(window.innerHeight < window.innerWidth);
+    };
+
+    window.addEventListener("orientationchange", handleOrientationChange);
+    window.addEventListener("resize", handleOrientationChange);
+
+    return () => {
+      window.removeEventListener("orientationchange", handleOrientationChange);
+      window.removeEventListener("resize", handleOrientationChange);
     };
   }, []);
 
@@ -191,7 +206,7 @@ const ImageCapture = ({ onImageSelect }: ImageCaptureProps) => {
   const cameraOverlay =
     isCameraOpen && !preview ? (
       <div
-        className="fixed inset-0 z-[200] flex flex-col bg-black touch-manipulation"
+        className="fixed inset-0 z-[200] flex bg-black touch-manipulation"
         role="dialog"
         aria-modal="true"
         aria-label="Camera"
@@ -200,39 +215,44 @@ const ImageCapture = ({ onImageSelect }: ImageCaptureProps) => {
           paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
           paddingLeft: "max(0.75rem, env(safe-area-inset-left))",
           paddingRight: "max(0.75rem, env(safe-area-inset-right))",
+          flexDirection: isLandscape ? 'row' : 'column',
         }}
       >
-        {error ? (
-          <div className="mb-3 shrink-0 rounded-xl border border-red-400/40 bg-red-950/90 px-4 py-2.5 text-center text-sm text-red-50">
-            {error}
+        {/* Portrait mode header */}
+        {!isLandscape && (
+          <>
+            {error ? (
+              <div className="mb-3 shrink-0 rounded-xl border border-red-400/40 bg-red-950/90 px-4 py-2.5 text-center text-sm text-red-50">
+                {error}
+              </div>
+            ) : null}
+            <div className="flex shrink-0 items-center justify-between gap-3 px-1 pb-3">
+              <div className="flex flex-col items-center text-center">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/50">Live view</span>
+                <span className="text-sm font-medium text-white/90">Frame your space</span>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Landscape mode left sidebar */}
+        {isLandscape && (
+          <div className="flex flex-col items-center justify-center gap-2 shrink-0 pr-3">
+            {error ? (
+              <div className="mb-3 rounded-lg border border-red-400/40 bg-red-950/90 px-2 py-1.5 text-center text-xs text-red-50 max-w-[4rem]">
+                {error}
+              </div>
+            ) : null}
+            <button
+              type="button"
+              onClick={stopCamera}
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/15 active:scale-95"
+              aria-label="Cancel"
+            >
+              <X size={24} />
+            </button>
           </div>
-        ) : null}
-        <div className="flex shrink-0 items-center justify-between gap-3 px-1 pb-3">
-          {/*
-          <button
-            type="button"
-            onClick={stopCamera}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 active:scale-95"
-            aria-label="Close camera"
-          >
-            <X size={22} strokeWidth={2} />
-          </button>
-          */}
-          <div className="flex flex-col items-center text-center">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/50">Live view</span>
-            <span className="text-sm font-medium text-white/90">Frame your space</span>
-          </div>
-          {/*
-          <button
-            type="button"
-            onClick={switchCamera}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 active:scale-95"
-            aria-label="Switch camera"
-          >
-            <SwitchCamera size={22} strokeWidth={2} />
-          </button>
-          */}
-        </div>
+        )}
 
         <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl ring-1 ring-white/15">
           <video
@@ -270,47 +290,76 @@ const ImageCapture = ({ onImageSelect }: ImageCaptureProps) => {
             <div className="h-16 w-px bg-gradient-to-b from-transparent via-white/40 to-transparent" />
           </div>
 
-          <div className="pointer-events-none absolute bottom-4 left-4 right-4 flex items-center justify-center gap-2 rounded-full bg-black/35 px-4 py-2 text-center backdrop-blur-md sm:bottom-6">
-            <Zap className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden />
-            <p className="text-xs leading-snug text-white/85 sm:text-sm">
-              Hold steady — tap the shutter for a crisp capture. Use the corner button to flip cameras.
-            </p>
-          </div>
+          {/* Instruction text - only show in portrait */}
+          {!isLandscape && (
+            <div className="pointer-events-none absolute bottom-4 left-4 right-4 flex items-center justify-center gap-2 rounded-full bg-black/35 px-4 py-2 text-center backdrop-blur-md sm:bottom-6">
+              <Zap className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden />
+              <p className="text-xs leading-snug text-white/85 sm:text-sm">
+                Hold steady — tap the shutter for a crisp capture. Use the corner button to flip cameras.
+              </p>
+            </div>
+          )}
         </div>
 
-        <div className="flex shrink-0 flex-col items-center gap-4 pt-6">
-          <div className="grid w-full max-w-md grid-cols-[3.5rem_1fr_3.5rem] items-center gap-2">
-            <button
-              type="button"
-              onClick={stopCamera}
-              className="flex h-14 w-14 items-center justify-center justify-self-start rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/15 active:scale-95"
-              aria-label="Cancel"
-            >
-              <X size={26} />
-            </button>
+        {/* Portrait mode bottom controls */}
+        {!isLandscape && (
+          <div className="flex shrink-0 flex-col items-center gap-4 pt-6">
+            <div className="grid w-full max-w-md grid-cols-[3.5rem_1fr_3.5rem] items-center gap-2">
+              <button
+                type="button"
+                onClick={stopCamera}
+                className="flex h-14 w-14 items-center justify-center justify-self-start rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/15 active:scale-95"
+                aria-label="Cancel"
+              >
+                <X size={26} />
+              </button>
 
+              <button
+                type="button"
+                onClick={capturePhoto}
+                className="group relative mx-auto flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center rounded-full border-[3px] border-white/90 bg-white/10 p-1 shadow-[0_0_0_6px_rgba(255,255,255,0.08)] transition active:scale-95 sm:h-[5rem] sm:w-[5rem]"
+                aria-label="Take photo"
+              >
+                <span className="h-full w-full rounded-full bg-gradient-to-br from-white via-white to-gray-200 shadow-inner ring-2 ring-black/10 transition group-active:scale-95" />
+              </button>
+
+              <div className="flex justify-end justify-self-end">
+                <button
+                  type="button"
+                  onClick={switchCamera}
+                  className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/15 active:scale-95 sm:hidden"
+                  aria-label="Switch camera"
+                >
+                  <SwitchCamera size={26} />
+                </button>
+              </div>
+            </div>
+            <p className="text-center text-[11px] text-white/45">JPG • Up to 10MB when uploading from files</p>
+          </div>
+        )}
+
+        {/* Landscape mode right sidebar */}
+        {isLandscape && (
+          <div className="flex flex-col items-center justify-center gap-3 shrink-0 pl-3">
             <button
               type="button"
               onClick={capturePhoto}
-              className="group relative mx-auto flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center rounded-full border-[3px] border-white/90 bg-white/10 p-1 shadow-[0_0_0_6px_rgba(255,255,255,0.08)] transition active:scale-95 sm:h-[5rem] sm:w-[5rem]"
+              className="group relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-[3px] border-white/90 bg-white/10 p-1 shadow-[0_0_0_4px_rgba(255,255,255,0.08)] transition active:scale-95"
               aria-label="Take photo"
             >
               <span className="h-full w-full rounded-full bg-gradient-to-br from-white via-white to-gray-200 shadow-inner ring-2 ring-black/10 transition group-active:scale-95" />
             </button>
 
-            <div className="flex justify-end justify-self-end">
-              <button
-                type="button"
-                onClick={switchCamera}
-                className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/15 active:scale-95 sm:hidden"
-                aria-label="Switch camera"
-              >
-                <SwitchCamera size={26} />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={switchCamera}
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/15 active:scale-95"
+              aria-label="Switch camera"
+            >
+              <SwitchCamera size={24} />
+            </button>
           </div>
-          <p className="text-center text-[11px] text-white/45">JPG • Up to 10MB when uploading from files</p>
-        </div>
+        )}
       </div>
     ) : null;
 
