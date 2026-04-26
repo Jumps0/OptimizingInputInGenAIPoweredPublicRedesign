@@ -34,7 +34,7 @@ const GalleryPage = () => {
         }
         const historyData = await fetchPromptHistories();
         const mine = historyData
-          .filter((item) => item.userId === user.id)
+          .filter((item) => item.userId === user.id && !item.isTemporary)
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         setItems(mine);
       } catch (error) {

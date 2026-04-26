@@ -25,6 +25,8 @@ export interface EditHistory {
   selectedOutputIndex?: number;
   version: number;
   timestamp: string;
+  isTemporary?: boolean;
+  serverRecordKey?: string;
   blobPath?: string;
 }
 
@@ -52,7 +54,7 @@ export const fetchProjects = async (): Promise<Project[]> => {
 };
 
 export const fetchEditHistory = async (): Promise<EditHistory[]> => {
-  return getStoredHistory();
+  return getStoredHistory().filter((item) => !item.isTemporary);
 };
 
 export const fetchResultFeedbacks = async () => {

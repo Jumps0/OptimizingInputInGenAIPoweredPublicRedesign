@@ -70,6 +70,8 @@ const csvEscape = (value: unknown) => {
   return `"${normalized.replace(/"/g, '""')}"`;
 };
 
+const getHistorySaveStateLabel = (entry: EditHistory) => (entry.isTemporary ? 'Temporary' : 'Final');
+
 const AdminPage = () => {
   const { user } = useAuth();
   const location = useLocation();
@@ -393,6 +395,7 @@ const AdminPage = () => {
       'Assigned Method',
       'Generation Count',
       'Generation ID',
+      'Generation Save State',
       'Generation Timestamp',
       'Prompt',
       'Version',
@@ -436,6 +439,7 @@ const AdminPage = () => {
           u.assignedMethod,
           userPrompts.length,
           generation?.id ?? '',
+          generation ? getHistorySaveStateLabel(generation) : '',
           generation?.timestamp ? new Date(generation.timestamp).toISOString() : '',
           generation?.prompt ?? '',
           generation?.version ?? '',
@@ -1013,9 +1017,19 @@ const AdminPage = () => {
                                   <p className="text-sm text-gray-900 font-medium leading-relaxed">
                                     "{item.prompt}"
                                   </p>
-                                  <span className="inline-flex self-start items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
-                                    v{item.version}
-                                  </span>
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="inline-flex self-start items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                                      v{item.version}
+                                    </span>
+                                    <span className={cn(
+                                      'inline-flex self-start items-center px-1.5 py-0.5 rounded text-[10px] font-medium border',
+                                      item.isTemporary
+                                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                        : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    )}>
+                                      {getHistorySaveStateLabel(item)}
+                                    </span>
+                                  </div>
                                 </div>
                               </td>
                               <td className="p-4 align-top">
@@ -1183,6 +1197,17 @@ const AdminPage = () => {
                                   </div>
                                   <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-1 rounded-full border border-gray-100">
                                     v{item.version}
+                                  </span>
+                                </div>
+
+                                <div className="mb-3">
+                                  <span className={cn(
+                                    'inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold border',
+                                    item.isTemporary
+                                      ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  )}>
+                                    {getHistorySaveStateLabel(item)}
                                   </span>
                                 </div>
                                 
