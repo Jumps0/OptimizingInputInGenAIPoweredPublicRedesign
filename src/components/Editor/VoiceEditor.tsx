@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, AlertCircle, RotateCcw } from 'lucide-react';
+import { Mic, MicOff, AlertCircle } from 'lucide-react';
 
 interface VoiceEditorProps {
   prompt: string;
@@ -184,19 +184,19 @@ const VoiceEditor = ({ prompt, onPromptChange }: VoiceEditorProps) => {
 
       {(prompt) && (
         <div className="w-full bg-gray-50 rounded-lg border border-gray-200 p-4 mt-4 relative group">
-          <div className="flex items-center justify-between mb-2">
+          <div className="mb-2">
             <span className="text-xs font-semibold uppercase text-gray-500 tracking-wider">Transcript</span>
-             <button 
-                onClick={handleClear}
-                className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                title="Clear transcript"
-             >
-                <RotateCcw size={14} />
-             </button>
           </div>
           <p className="text-gray-800 italic">
             "{prompt}"
           </p>
+          <button
+            onClick={handleClear}
+            className="mt-4 w-full rounded-md bg-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+            title="Clear transcript"
+          >
+            Clear Transcript
+          </button>
         </div>
       )}
 
