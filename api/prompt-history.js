@@ -2,6 +2,19 @@ import { del, list, put } from '@vercel/blob';
 
 const PROMPT_HISTORY_PREFIX = 'oigaippr-blob/prompt-history/';
 
+const isTemporaryEntry = (value) => {
+  if (value === true || value === 1) {
+    return true;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === 'true' || normalized === '1' || normalized === 'temporary';
+  }
+
+  return false;
+};
+
 const setCorsHeaders = (res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -125,7 +138,7 @@ export default async function handler(req, res) {
                 selectedOutputIndex: normalizedSelectedIndex,
                 version: Number(payload.version) || 1,
                 timestamp: String(payload.timestamp || new Date().toISOString()),
-                isTemporary: payload.isTemporary === true,
+                isTemporary: isTemporaryEntry(payload.isTemporary ?? payload.saveState),
                 serverRecordKey:
                   typeof payload.serverRecordKey === 'string' && payload.serverRecordKey.trim()
                     ? payload.serverRecordKey.trim()
@@ -170,7 +183,8 @@ export default async function handler(req, res) {
       ...entry,
       username: String(entry.username || ''),
       timestamp,
-      isTemporary: entry.isTemporary === true,
+      isTemporary: isTemporaryEntry(entry.isTemporary ?? entry.saveState),
+      saveState: isTemporaryEntry(entry.isTemporary ?? entry.saveState) ? 'temporary' : 'final',
       serverRecordKey: serverRecordKey || undefined,
     };
 
