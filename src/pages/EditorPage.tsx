@@ -39,9 +39,6 @@ const EditorPage = () => {
 
   const isAdmin = user?.role === "admin";
   const hasAdminSelectedToolRef = useRef(false);
-  const temporaryHistoryIdRef = useRef<number | null>(null);
-  const temporaryRecordKeyRef = useRef<string | null>(null);
-  const lastTemporarySaveSignatureRef = useRef("");
 
   const [step, setStep] = useState<EditorStep>("upload");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -75,13 +72,6 @@ const EditorPage = () => {
   const isSelectedVariantGenerating = Boolean(
     selectedVariant?.imageUrl && selectedVariant.status === "loading"
   );
-  const hasReadyVariant = resultVariants.some(
-    (variant) => variant.status === "ready" && Boolean(variant.imageUrl)
-  );
-  const isGenerationComplete =
-    !isGenerating &&
-    resultVariants.length > 0 &&
-    resultVariants.every((variant) => variant.status !== "loading");
 
   const isEditingSessionActive = step !== "upload" && Boolean(previewUrl);
 
@@ -121,12 +111,6 @@ const EditorPage = () => {
     if (!user) return tool === "text";
     if (user.role === "admin") return METHODS.includes(tool);
     return tool === user.assignedMethod;
-  };
-
-  const resetTemporaryPersistence = () => {
-    temporaryHistoryIdRef.current = null;
-    temporaryRecordKeyRef.current = null;
-    lastTemporarySaveSignatureRef.current = "";
   };
 
 
@@ -233,7 +217,6 @@ const EditorPage = () => {
   };
 
   const handleImageSelect = (_file: File, url: string) => {
-    resetTemporaryPersistence();
     setPreviewUrl(url);
     setSessionRound(1);
     setRefineBaseHistoryId(null);
@@ -244,7 +227,6 @@ const EditorPage = () => {
 
   const handleBack = () => {
     if (step === "result") {
-      resetTemporaryPersistence();
       setStep("editor");
       setResultVariants([]);
       setSelectedVariantIndex(0);
@@ -253,7 +235,6 @@ const EditorPage = () => {
       setFeedbackText("");
       setFeedbackThanks(false);
     } else {
-      resetTemporaryPersistence();
       setStep("upload");
       setPreviewUrl(null);
       setPrompt("");
@@ -348,7 +329,6 @@ const EditorPage = () => {
     console.log("Starting process...");
     if (!previewUrl) return;
 
-    resetTemporaryPersistence();
     setIsGenerating(true);
     setFeedbackOpen(false);
     setFeedbackText("");
@@ -649,13 +629,7 @@ const EditorPage = () => {
     }
   };
 
-  const persistSelectedGeneration = async ({
-    isTemporary = false,
-    persistLocally = true,
-  }: {
-    isTemporary?: boolean;
-    persistLocally?: boolean;
-  } = {}) => {
+  const persistSelectedGeneration = async (): Promise<number | null> => {
     if (!previewUrl || !selectedResultImage || !user) {
       return null;
     }
@@ -668,86 +642,15 @@ const EditorPage = () => {
       return resultVariants[index]?.imageUrl || selectedResultImage;
     });
 
-    if (!temporaryHistoryIdRef.current) {
-      temporaryHistoryIdRef.current = Date.now();
-    }
-
-    if (!temporaryRecordKeyRef.current) {
-      temporaryRecordKeyRef.current = `user-${user.id}-generation-${temporaryHistoryIdRef.current}`;
-    }
-
     const saved = await saveNewGeneration(user.id, user.username, prompt, previewUrl, selectedResultImage, {
       baseHistoryId: refineBaseHistoryId,
       allOutputImages,
       selectedOutputIndex: safeSelectedIndex,
-      existingHistoryId: temporaryHistoryIdRef.current,
-      serverRecordKey: temporaryRecordKeyRef.current,
-      isTemporary,
-      persistLocally,
     });
 
-    temporaryHistoryIdRef.current = saved.id;
-    temporaryRecordKeyRef.current = saved.serverRecordKey || temporaryRecordKeyRef.current;
-
-    if (!isTemporary) {
-      setLastHistoryId(saved.id);
-    }
-
-    return saved;
+    setLastHistoryId(saved.id);
+    return saved.id;
   };
-
-  useEffect(() => {
-    if (!isGenerationComplete || !hasReadyVariant || !previewUrl || !selectedResultImage || !user || isSavingSelection) {
-      return;
-    }
-
-    const signature = JSON.stringify({
-      previewUrl,
-      prompt,
-      selectedVariantIndex,
-      outputImages: resultVariants.map((variant) => variant.imageUrl || ""),
-      statuses: resultVariants.map((variant) => variant.status),
-    });
-
-    if (signature === lastTemporarySaveSignatureRef.current) {
-      return;
-    }
-
-    let isCancelled = false;
-
-    const persistTemporaryGeneration = async () => {
-      try {
-        const saved = await persistSelectedGeneration({
-          isTemporary: true,
-          persistLocally: false,
-        });
-
-        if (!isCancelled && saved) {
-          lastTemporarySaveSignatureRef.current = signature;
-        }
-      } catch (error) {
-        if (!isCancelled) {
-          console.error("Failed to temporarily persist completed generation:", error);
-        }
-      }
-    };
-
-    void persistTemporaryGeneration();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [
-    hasReadyVariant,
-    isGenerationComplete,
-    isSavingSelection,
-    previewUrl,
-    prompt,
-    resultVariants,
-    selectedResultImage,
-    selectedVariantIndex,
-    user,
-  ]);
 
   const renderTool = () => {
     switch (activeTool) {
@@ -792,14 +695,13 @@ const EditorPage = () => {
 
     setIsSavingSelection(true);
     try {
-      const savedHistory = await persistSelectedGeneration();
-      setRefineBaseHistoryId(savedHistory?.id ?? null);
+      const savedHistoryId = await persistSelectedGeneration();
+      setRefineBaseHistoryId(savedHistoryId);
       setPreviewUrl(selectedResultImage);
       setSessionRound((r) => r + 1);
       setStep("editor");
       setResultVariants([]);
       setSelectedVariantIndex(0);
-      resetTemporaryPersistence();
       setFeedbackOpen(false);
       setFeedbackText("");
       setFeedbackThanks(false);
@@ -836,12 +738,10 @@ const EditorPage = () => {
 
     setFeedbackOpen(false);
     setFeedbackText("");
-    resetTemporaryPersistence();
     navigate("/gallery");
   };
 
   const handleRestart = () => {
-    resetTemporaryPersistence();
     setSessionRound(1);
     setRefineBaseHistoryId(null);
     setStep("editor");
@@ -880,6 +780,12 @@ const EditorPage = () => {
   };
 
   const renderResult = () => {
+    const hasReadyVariant = resultVariants.some((variant) => variant.status === "ready" && Boolean(variant.imageUrl));
+    const isGenerationComplete =
+      !isGenerating &&
+      resultVariants.length > 0 &&
+      resultVariants.every((variant) => variant.status !== "loading");
+
     if (!previewUrl || (!isGenerating && resultVariants.length > 0 && !hasReadyVariant)) {
       return (
         <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in duration-300">

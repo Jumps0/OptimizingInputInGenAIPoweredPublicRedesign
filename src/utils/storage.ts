@@ -360,27 +360,7 @@ export const deletePromptHistoryItem = async (id: number, blobPath?: string): Pr
   }
 };
 
-const upsertStoredHistoryItem = (entry: EditHistory) => {
-  const history = getStoredHistory();
-  const next = [...history];
-  const existingIndex = next.findIndex((item) => {
-    if (entry.serverRecordKey && item.serverRecordKey) {
-      return item.serverRecordKey === entry.serverRecordKey;
-    }
-
-    return item.id === entry.id;
-  });
-
-  if (existingIndex >= 0) {
-    next[existingIndex] = entry;
-  } else {
-    next.push(entry);
-  }
-
-  safelySetItem(STORAGE_KEYS.HISTORY, JSON.stringify(next));
-};
-
-const savePromptHistoryEntry = async (entry: EditHistory): Promise<Pick<EditHistory, 'blobPath'>> => {
+const savePromptHistoryEntry = async (entry: EditHistory): Promise<void> => {
   const remotePayload = await toRemotePromptHistoryPayload(entry);
   const response = await fetch('/api/prompt-history', {
     method: 'POST',
@@ -394,11 +374,6 @@ const savePromptHistoryEntry = async (entry: EditHistory): Promise<Pick<EditHist
     const errorBody = (await response.json().catch(() => null)) as { error?: string } | null;
     throw new Error(errorBody?.error || 'Failed to save prompt history to blob storage');
   }
-
-  const responseBody = (await response.json().catch(() => null)) as { pathname?: string } | null;
-  return {
-    blobPath: responseBody?.pathname,
-  };
 };
 
 const safelySetItem = (key: string, value: string): boolean => {
@@ -511,18 +486,12 @@ export const saveNewGeneration = async (
     baseHistoryId?: number | null;
     allOutputImages?: string[];
     selectedOutputIndex?: number;
-    existingHistoryId?: number | null;
-    isTemporary?: boolean;
-    persistLocally?: boolean;
-    serverRecordKey?: string | null;
   }
 ): Promise<EditHistory> => {
   const projects = getStoredProjects();
   const history = getStoredHistory();
   const normalizedUsername = username.trim() || `User #${userId}`;
   const baseHistoryId = options?.baseHistoryId ?? null;
-  const isTemporary = options?.isTemporary === true;
-  const persistLocally = options?.persistLocally !== false;
   const baseHistory =
     Number.isFinite(baseHistoryId) && baseHistoryId !== null
       ? history.find((h) => h.id === baseHistoryId && h.userId === userId)
@@ -563,24 +532,16 @@ export const saveNewGeneration = async (
     };
 
     // Save project with safety check
-    if (persistLocally) {
-      projects.push(newProject);
-      try {
-        safelySetItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
-      } catch (error) {
-        console.warn('Failed to persist project locally. Continuing with blob save.', error);
-      }
+    projects.push(newProject);
+    try {
+      safelySetItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
+    } catch (error) {
+      console.warn('Failed to persist project locally. Continuing with blob save.', error);
     }
   }
 
   // Create history item
-  const existingHistoryId = options?.existingHistoryId;
-  const newHistoryId = Number.isFinite(existingHistoryId) && existingHistoryId !== null
-    ? Number(existingHistoryId)
-    : history.length > 0
-      ? Math.max(...history.map(h => h.id)) + 1
-      : 1;
-  const serverRecordKey = options?.serverRecordKey?.trim() || `user-${userId}-generation-${newHistoryId}`;
+  const newHistoryId = history.length > 0 ? Math.max(...history.map(h => h.id)) + 1 : 1;
   
   const newHistoryItem: EditHistory = {
     id: newHistoryId,
@@ -594,22 +555,17 @@ export const saveNewGeneration = async (
     selectedOutputIndex,
     version,
     timestamp: new Date().toISOString(),
-    isTemporary,
-    serverRecordKey,
   };
 
-  if (persistLocally) {
-    try {
-      upsertStoredHistoryItem(newHistoryItem);
-    } catch (error) {
-      console.warn('Failed to persist prompt history locally. Continuing with blob save.', error);
-    }
+  // Save history with safety check
+  history.push(newHistoryItem);
+  try {
+    safelySetItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+  } catch (error) {
+    console.warn('Failed to persist prompt history locally. Continuing with blob save.', error);
   }
 
-  const remoteResult = await savePromptHistoryEntry(newHistoryItem);
+  await savePromptHistoryEntry(newHistoryItem);
   
-  return {
-    ...newHistoryItem,
-    blobPath: remoteResult.blobPath,
-  };
+  return newHistoryItem;
 };

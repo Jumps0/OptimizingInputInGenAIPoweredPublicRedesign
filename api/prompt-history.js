@@ -125,11 +125,6 @@ export default async function handler(req, res) {
                 selectedOutputIndex: normalizedSelectedIndex,
                 version: Number(payload.version) || 1,
                 timestamp: String(payload.timestamp || new Date().toISOString()),
-                isTemporary: payload.isTemporary === true,
-                serverRecordKey:
-                  typeof payload.serverRecordKey === 'string' && payload.serverRecordKey.trim()
-                    ? payload.serverRecordKey.trim()
-                    : undefined,
                 blobPath: blob.pathname,
               };
             } catch {
@@ -158,48 +153,18 @@ export default async function handler(req, res) {
 
     const timestamp = entry.timestamp || new Date().toISOString();
     const safeTimestamp = String(timestamp).replace(/[:.]/g, '-');
-    const serverRecordKey =
-      typeof entry.serverRecordKey === 'string' && entry.serverRecordKey.trim()
-        ? entry.serverRecordKey.trim()
-        : null;
-    const filePath = serverRecordKey
-      ? `${PROMPT_HISTORY_PREFIX}${serverRecordKey}.json`
-      : `${PROMPT_HISTORY_PREFIX}${safeTimestamp}-user-${entry.userId}-history-${entry.id || Date.now()}.json`;
+    const filePath = `${PROMPT_HISTORY_PREFIX}${safeTimestamp}-user-${entry.userId}-history-${entry.id || Date.now()}.json`;
 
     const payload = {
       ...entry,
       username: String(entry.username || ''),
       timestamp,
-      isTemporary: entry.isTemporary === true,
-      serverRecordKey: serverRecordKey || undefined,
     };
-
-    if (serverRecordKey && payload.isTemporary) {
-      const existing = await list({ prefix: filePath, limit: 1 });
-      const existingBlob = existing.blobs.find((blob) => blob.pathname === filePath);
-
-      if (existingBlob) {
-        const existingResponse = await fetch(existingBlob.url, { method: 'GET' });
-        const existingPayload = existingResponse.ok
-          ? await existingResponse.json().catch(() => null)
-          : null;
-
-        if (existingPayload && existingPayload.isTemporary === false) {
-          return res.status(200).json({
-            ok: true,
-            pathname: existingBlob.pathname,
-            history: existingPayload,
-            skippedOverwrite: true,
-          });
-        }
-      }
-    }
 
     const blob = await put(filePath, JSON.stringify(payload, null, 2), {
       access: 'public',
       contentType: 'application/json',
       addRandomSuffix: false,
-      allowOverwrite: Boolean(serverRecordKey),
     });
 
     return res.status(201).json({
