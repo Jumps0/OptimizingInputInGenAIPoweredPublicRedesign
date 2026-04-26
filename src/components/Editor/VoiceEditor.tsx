@@ -211,7 +211,7 @@ const VoiceEditor = ({ prompt, onPromptChange }: VoiceEditorProps) => {
         <div>
          <div className="flex items-start gap-2 bg-blue-50 p-3 rounded-md border border-blue-100 text-sm text-blue-800 w-full">
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
-            <p>Voice commands are enabled. Try saying "Add some trees" or "Remove the cars".</p>
+            <p>Voice commands are enabled. Try saying "Add some trees" or "Replace the cars with bushes".</p>
          </div>
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
           <h4 className="text-sm font-semibold text-blue-800 mb-2">Tips for better results:</h4>
