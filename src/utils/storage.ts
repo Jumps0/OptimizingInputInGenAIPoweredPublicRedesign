@@ -304,14 +304,11 @@ export const deletePostStudyResponseItem = async (id: number, blobPath?: string)
   }
 };
 
-export const fetchPromptHistories = async ({ includeTemporary = false }: { includeTemporary?: boolean } = {}): Promise<EditHistory[]> => {
+export const fetchPromptHistories = async (): Promise<EditHistory[]> => {
   const localHistory = getStoredHistory();
-  const filterHistory = (history: EditHistory[]) => (
-    includeTemporary ? history : history.filter((item) => !item.isTemporary)
-  );
 
   try {
-    const response = await fetch(`/api/prompt-history?includeTemporary=${includeTemporary ? '1' : '0'}&_=${Date.now()}`, {
+    const response = await fetch(`/api/prompt-history?_=${Date.now()}`, {
       method: 'GET',
       cache: 'no-store',
     });
@@ -326,7 +323,7 @@ export const fetchPromptHistories = async ({ includeTemporary = false }: { inclu
     }
 
     const data = (await response.json()) as { history?: EditHistory[] };
-    const history = filterHistory(Array.isArray(data.history) ? data.history : []);
+    const history = Array.isArray(data.history) ? data.history : [];
 
     try {
       safelySetItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
@@ -337,7 +334,7 @@ export const fetchPromptHistories = async ({ includeTemporary = false }: { inclu
     return history;
   } catch (error) {
     console.warn('Failed to fetch prompt history from remote storage. Falling back to local browser storage.', error);
-    return filterHistory(localHistory);
+    return localHistory;
   }
 };
 

@@ -112,7 +112,7 @@ const AdminPage = () => {
         await new Promise(resolve => setTimeout(resolve, 800));
         const [usersData, historyData, postStudyResponseData] = await Promise.all([
           fetchUsers(),
-          fetchPromptHistories({ includeTemporary: true }),
+          fetchPromptHistories(),
           fetchPostStudyResponses(),
         ]);
 
