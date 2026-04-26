@@ -259,7 +259,7 @@ const EditorPage = () => {
       return;
     }
 
-    setBackExitAction(() => () => {
+    setBackExitAction(() => {
       navigate("/gallery");
     });
     return () => {
