@@ -216,6 +216,7 @@ const VoiceEditor = ({ prompt, onPromptChange }: VoiceEditorProps) => {
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
           <h4 className="text-sm font-semibold text-blue-800 mb-2">Tips for better results:</h4>
           <ul className="text-sm text-blue-700 list-disc list-inside space-y-1">
+            <li>Avoid using the word 'remove', instead ask to 'replace'</li>
             <li>Mention specific materials (wood, stone, metal)</li>
             <li>Describe lighting (sunny, sunset, evening)</li>
             <li>Specify styles (modern, classical, eco-friendly)</li>
