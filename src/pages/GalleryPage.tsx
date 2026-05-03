@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchPromptHistories, type EditHistory } from '@/utils';
 import { useAuth } from '@/context';
-import { Camera, X, ClipboardList } from 'lucide-react';
+import { Camera, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ComparisonSlider from '@/components/ComparisonSlider';
 
@@ -75,6 +75,13 @@ const GalleryPage = () => {
         Once you have modified four separate images, click the button below to fill out the post-study form and finish.
       </p>
 
+      <button
+        onClick={() => navigate('/post-study-form')}
+        className="w-full mb-5 px-4 py-4 rounded-xl bg-orange-500 text-black font-bold text-base md:text-lg hover:bg-orange-600 transition-colors"
+      >
+        Once you are finished, Click here to fill out post-study form
+      </button>
+
       {items.length === 0 ? (
         <div className="bg-white border border-dashed border-gray-300 rounded-xl p-8 md:p-12 text-center text-gray-500">
           No edited images yet. Create one from the editor.
@@ -122,24 +129,6 @@ const GalleryPage = () => {
         </div>
       )}
 
-      <div className="fixed bottom-22 right-4 md:bottom-6 md:right-6 flex items-center gap-3">
-        <p className="text-xs md:text-sm font-semibold text-blue-700 leading-tight max-w-[170px] bg-white px-2 py-1 rounded-xl shadow-sm border border-gray-200">
-          Complete post-study form to finish
-        </p>
-        <div className="relative">
-          <span
-            className="absolute -inset-2 rounded-full border border-emerald-500 opacity-60 animate-pulse -z-10"
-            style={{ animationDuration: "2s" }}
-          />
-          <button
-            onClick={() => navigate("/post-study-form")}
-            className="relative w-14 h-14 rounded-full bg-gray-900 text-white shadow-xl flex items-center justify-center hover:bg-black transition-colors"
-            aria-label="Open post-study form"
-          >
-            <ClipboardList size={22} />
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
