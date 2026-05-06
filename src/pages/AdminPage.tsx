@@ -491,6 +491,7 @@ const AdminPage = () => {
       'Survey Submitted At',
       'User ID',
       'Username',
+      'Assigned Method',
       'Age',
       'Gender',
       'Aware Of AI',
@@ -510,6 +511,7 @@ const AdminPage = () => {
       survey.createdAt ? new Date(survey.createdAt).toISOString() : '',
       survey.userId,
       userNameById.get(survey.userId) || `User #${survey.userId}`,
+      userMethodById.get(survey.userId) || '',
       survey.responses?.age ?? '',
       survey.responses?.gender ?? '',
       survey.responses?.awareOfAI ?? '',
@@ -615,7 +617,7 @@ const AdminPage = () => {
               <button
                 onClick={exportSurveyData}
                 disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-white text-e-700 border border-e-200 rounded-lg hover:bg-e-50 transition-all shadow-sm hover:shadow text-sm font-medium disabled:opacity-60"
+                className="flex items-center gap-2 px-4 py-2 bg-e-600 text-black rounded-lg hover:bg-e-700 transition-all shadow-sm hover:shadow text-sm font-medium disabled:opacity-60"
               >
                 <Download size={16} />
                 Export Survey Data
