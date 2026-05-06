@@ -70,6 +70,25 @@ const csvEscape = (value: unknown) => {
   return `"${normalized.replace(/"/g, '""')}"`;
 };
 
+const downloadCsv = (filenamePrefix: string, headers: string[], rows: unknown[][]) => {
+  const csvContent = [
+    headers.map(csvEscape).join(','),
+    ...rows.map((row) => row.map(csvEscape).join(',')),
+  ].join('\n');
+
+  // Include UTF-8 BOM so Excel correctly detects file encoding.
+  const blob = new Blob(['\uFEFF', csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  anchor.href = url;
+  anchor.download = `${filenamePrefix}-${stamp}.csv`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+};
+
 const AdminPage = () => {
   const { user } = useAuth();
   const location = useLocation();
@@ -463,21 +482,49 @@ const AdminPage = () => {
       });
     });
 
-    const csvContent = [
-      headers.map(csvEscape).join(','),
-      ...rows.map((row) => row.map(csvEscape).join(',')),
-    ].join('\n');
+    downloadCsv('admin-report', headers, rows);
+  };
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    anchor.href = url;
-    anchor.download = `admin-report-${stamp}.csv`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(url);
+  const exportSurveyData = () => {
+    const headers = [
+      'Survey ID',
+      'Survey Submitted At',
+      'User ID',
+      'Username',
+      'Age',
+      'Gender',
+      'Aware Of AI',
+      'Used AI Before',
+      'Easy To Use',
+      'Express Ideas',
+      'Matched Expectation',
+      'Easy Edit',
+      'Felt Engaged',
+      'Overall Satisfaction',
+      'Open To Follow-up Interview',
+      'Additional Comments',
+    ];
+
+    const rows = postStudyResponses.map((survey) => [
+      survey.id,
+      survey.createdAt ? new Date(survey.createdAt).toISOString() : '',
+      survey.userId,
+      userNameById.get(survey.userId) || `User #${survey.userId}`,
+      survey.responses?.age ?? '',
+      survey.responses?.gender ?? '',
+      survey.responses?.awareOfAI ?? '',
+      survey.responses?.usedAI ?? '',
+      survey.responses?.easyToUse ?? '',
+      survey.responses?.expressIdeas ?? '',
+      survey.responses?.matchedExpectation ?? '',
+      survey.responses?.easyEdit ?? '',
+      survey.responses?.feltEngaged ?? '',
+      survey.responses?.overallSatisfaction ?? '',
+      survey.responses?.followUpInterview ?? '',
+      survey.responses?.additionalComments ?? '',
+    ]);
+
+    downloadCsv('survey-data', headers, rows);
   };
 
   const confirmDelete = async () => {
@@ -565,6 +612,14 @@ const AdminPage = () => {
                 <span>Last 30 Days</span>
               </div>
               */}
+              <button
+                onClick={exportSurveyData}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 bg-white text-e-700 border border-e-200 rounded-lg hover:bg-e-50 transition-all shadow-sm hover:shadow text-sm font-medium disabled:opacity-60"
+              >
+                <Download size={16} />
+                Export Survey Data
+              </button>
               <button
                 onClick={exportAdminReport}
                 disabled={loading}
