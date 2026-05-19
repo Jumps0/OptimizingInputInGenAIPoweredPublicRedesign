@@ -63,7 +63,7 @@ const methodBadgeClassByMethod: Record<MethodKey, string> = {
 const isMethodKey = (value: string): value is MethodKey =>
   value === 'text' || value === 'voice' || value === 'inpainting' || value === 'dragdrop';
 
-const ITEMS_PER_PAGE = 16;
+const ITEMS_PER_PAGE = 200;
 
 const csvEscape = (value: unknown) => {
   const normalized = String(value ?? '').replace(/\r?\n|\r/g, ' ');
