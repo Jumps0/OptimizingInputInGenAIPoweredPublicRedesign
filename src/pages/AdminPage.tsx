@@ -1129,6 +1129,13 @@ const AdminPage = () => {
                                 <div className="inline-flex items-center gap-2">
                                   <button
                                     onClick={() => {
+                                      // Copy method and prompt to clipboard
+                                      const methodName = getEntryMethod(item);
+                                      const promptText = item.prompt;
+                                      const clipboardText = `Input: ${methodName.charAt(0).toUpperCase() + methodName.slice(1)}, Prompt: "${promptText}"`;
+                                      
+                                      navigator.clipboard.writeText(clipboardText);
+
                                       // Download selected output image
                                       fetch(selectedOutputImage)
                                         .then(res => res.blob())
