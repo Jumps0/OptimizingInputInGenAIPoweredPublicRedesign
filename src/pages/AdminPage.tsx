@@ -1127,15 +1127,45 @@ const AdminPage = () => {
                               </td>
                               <td className="p-4 text-right align-top">
                                 <div className="inline-flex items-center gap-2">
-                                  <a 
-                                    href={selectedOutputImage} 
-                                    target="_blank" 
-                                    rel="noreferrer" 
+                                  <button
+                                    onClick={() => {
+                                      // Download selected output image
+                                      fetch(selectedOutputImage)
+                                        .then(res => res.blob())
+                                        .then(blob => {
+                                          const url = URL.createObjectURL(blob);
+                                          const a = document.createElement('a');
+                                          a.href = url;
+                                          a.download = `output_${item.id}.png`;
+                                          document.body.appendChild(a);
+                                          a.click();
+                                          document.body.removeChild(a);
+                                          URL.revokeObjectURL(url);
+                                        })
+                                        .catch(console.error);
+                                      
+                                      // Download input image if it exists
+                                      if (item.inputImage) {
+                                        fetch(item.inputImage)
+                                          .then(res => res.blob())
+                                          .then(blob => {
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `input_${item.id}.png`;
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            document.body.removeChild(a);
+                                            URL.revokeObjectURL(url);
+                                          })
+                                          .catch(console.error);
+                                      }
+                                    }}
                                     className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-e-700 bg-e-50 hover:bg-e-100 rounded-md transition-colors"
                                   >
-                                    View Full
+                                    Download Images
                                     <ArrowUpRight size={12} />
-                                  </a>
+                                  </button>
                                   <button
                                     onClick={() => setDeleteDialog({
                                       kind: 'prompt',
