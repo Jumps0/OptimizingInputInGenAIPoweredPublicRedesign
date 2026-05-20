@@ -1136,7 +1136,7 @@ const AdminPage = () => {
                                           const url = URL.createObjectURL(blob);
                                           const a = document.createElement('a');
                                           a.href = url;
-                                          a.download = `output_${item.id}.png`;
+                                          a.download = `output_${item.username}_(${item.id}).png`;
                                           document.body.appendChild(a);
                                           a.click();
                                           document.body.removeChild(a);
@@ -1152,7 +1152,7 @@ const AdminPage = () => {
                                             const url = URL.createObjectURL(blob);
                                             const a = document.createElement('a');
                                             a.href = url;
-                                            a.download = `input_${item.id}.png`;
+                                            a.download = `input_${item.username}_(${item.id}).png`;
                                             document.body.appendChild(a);
                                             a.click();
                                             document.body.removeChild(a);
