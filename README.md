@@ -14,7 +14,7 @@ This project operates with a backend hosted via an Ubuntu VM and **pm2**. Follow
 2. Create a `project` folder, and inside that a `data-api` folder.
 3. Place the provided `server.js` folder inside the `data-api` folder. Ensure to go inside the script and replace our vercel.app URL with yours.
 4. Create a `data` folder, and inside that create three folders; `post-study-responses`, `prompt-history`, and `users`. This is where your data will be stored.
-5. Install `npm`, `express`, and `pm2`.
+5. Install `npm`, `express`, `fs`, `path`, and `pm2`.
 6. Navigate to the `data-api` folder and input the following commands:
 ```
 pm2 start server.js --name YOUR_NAME-data-api
