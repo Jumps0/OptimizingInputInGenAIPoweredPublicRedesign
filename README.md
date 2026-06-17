@@ -1,6 +1,7 @@
 # Optimizing Input in Generative AI Powered Public Redesign
 This is a 2025/2026 (CS-IT9/10) thesis project by students at Aalborg University.
 Created by: Cody Jackson, Farika M.M. Farook, and Ma Shalah
+**You can find the PDF of our full report in this repository.**
 
 AI Image editing powered by Black Forest Lab's **FLUX.2 (klien 9B)** and **FLUX.1 Fill (pro)** models.
 
